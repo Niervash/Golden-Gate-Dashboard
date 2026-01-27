@@ -1,0 +1,4 @@
+Adding fitur : add fitur (feature name)
+optimasi code : code optimasi (name function)
+bug fixxing : fix bug (name file shich had a bug)
+ogher : other update
