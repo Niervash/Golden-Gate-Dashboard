@@ -1,4 +1,5 @@
 import Preloader from "./loading-bar";
+import LoginBranding from "./login-brand";
 import CardLogin from "./login-card";
 
 export * from "./main-navbar";
@@ -11,4 +12,4 @@ export * from "./navbar-PPDB";
 export * from "./PPDB-form";
 export * from "./footer-PPDB";
 
-export { CardLogin, Preloader };
+export { CardLogin, LoginBranding, Preloader };

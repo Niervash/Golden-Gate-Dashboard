@@ -1,15 +1,16 @@
 import React from "react";
 
-interface props {}
+interface props {
+  children: any;
+}
 
-const LoginLayout: React.FC<props> = () => {
-  return <div>
-
-{/* navbar */}
-
-
-
-  </div>;
+const LoginLayout: React.FC<props> = ({ children }) => {
+  return (
+    <div className="min-h-screen flex flex-col lg:flex-row">
+    
+      {children}
+    </div>
+  );
 };
 
 export default LoginLayout;

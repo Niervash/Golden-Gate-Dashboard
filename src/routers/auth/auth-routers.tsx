@@ -13,7 +13,7 @@ const AuthRouters: React.FC = () => {
 
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000); // 2 detik untuk demo, bisa disesuaikan
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [location.pathname]);
@@ -24,6 +24,7 @@ const AuthRouters: React.FC = () => {
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
+          <Route index element={<Navigate to="/login" replace />} />
           <Route
             path="/login"
             element={
@@ -33,7 +34,6 @@ const AuthRouters: React.FC = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.4 }}
               >
-                {/* login layout */}
                 <LoginPage />
               </motion.div>
             }
