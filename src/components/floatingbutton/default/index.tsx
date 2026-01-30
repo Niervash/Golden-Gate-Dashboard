@@ -23,8 +23,8 @@ const FloatingButton: React.FC = () => {
   // Data kontak sekolah
   const contactInfo = {
     whatsapp: {
-      number: "+62 812-3456-7890",
-      link: "https://wa.me/6281234567890?text=Halo%20GOLDEN%20GATE%20SCHOOL%2C%20saya%20ingin%20bertanya%20tentang...",
+      number: "+62 853-1222-2626",
+      link: "https://wa.me/6285312222626?text=Halo%20GOLDEN%20GATE%20SCHOOL%2C%20saya%20ingin%20bertanya%20tentang...",
       label: "Chat via WhatsApp",
     },
     phone: {

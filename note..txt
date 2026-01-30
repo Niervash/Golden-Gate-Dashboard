@@ -3,3 +3,34 @@ file add : add file (filename)
 optimasi code : code optimasi (name function)
 bug fixxing : fix bug (name file shich had a bug)
 ogher : other update
+
+
+fitur admin 
+- dashboard
+- manajemen siswa
+- manajemen guru
+- akademik
+- jadwal
+- absesnsi 
+- penilaian & raport
+- BK & konseling
+- prestasi 
+- Pengumuman 
+- arsip dokumen
+- laporan
+- pengaturan
+
+kepsek
+-anajemen siswa
+- manajemen guru
+- akademik
+- prestasi 
+- pengumuman
+- laporan
+
+guru
+manajemen siswa
+jadwal
+absesnsi
+penilaian & raport
+pengumuman 
