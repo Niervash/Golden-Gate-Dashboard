@@ -14,13 +14,13 @@ const NavbarPpdb: React.FC = () => {
         stiffness: 100,
         damping: 20,
       }}
-      className="sticky top-0 left-0 right-0 z-50 py-4"
+      className="sticky top-0 left-0 right-0 z-50 py-4 "
       style={{
         background: "#23305d",
         color: "#ffffff",
       }}
     >
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 p-10">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0">

@@ -1,3 +1,3 @@
-import DashboardHeader from "./default";
+import AdminHeader from "./default";
 
-export { DashboardHeader };
+export { AdminHeader };

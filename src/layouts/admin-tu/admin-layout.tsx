@@ -1,11 +1,27 @@
 import React from "react";
-import { DashboardHeader } from "../../components";
+import { Breadcrumb, Layout, Menu, theme } from "antd";
+import { AdminHeader } from "../../components";
+import { AdminFooter } from "../../components/footer-dashboard";
 
-const AdminLayout: React.FC = () => {
+const { Content } = Layout;
+
+interface props {
+  children: any;
+}
+
+const AdminLayout: React.FC<props> = ({ children }) => {
   return (
-    <div>
-      <DashboardHeader />
-    </div>
+    <Layout>
+      <AdminHeader />
+      <Content style={{ padding: "0 48px" }}>
+        <Breadcrumb
+          style={{ margin: "16px 0" }}
+          items={[{ title: "Home" }, { title: "List" }, { title: "App" }]}
+        />
+        {children}
+      </Content>
+      <AdminFooter />
+    </Layout>
   );
 };
 

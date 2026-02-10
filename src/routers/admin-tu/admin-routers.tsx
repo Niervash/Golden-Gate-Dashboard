@@ -24,9 +24,9 @@ const AdminRouters: React.FC = () => {
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route index element={<Navigate to="/home" replace />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route
-            path="/admin tu"
+            path="/admin-tu"
             element={
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

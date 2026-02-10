@@ -1,13 +1,19 @@
 import React from "react";
 import { AdminLayout } from "../../layouts";
+import { PPDBAdminDashboard } from "../../components";
 
 interface props {}
 
 const AdminPages: React.FC<props> = () => {
   return (
-    <div>
-      <AdminLayout />
-    </div>
+    <>
+      {/* <AdminLayout>
+        <PPDBAdminDashboard />
+      </AdminLayout> */}
+      <AdminLayout>
+        <PPDBAdminDashboard />
+      </AdminLayout>
+    </>
   );
 };
 
