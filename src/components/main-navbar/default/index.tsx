@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ILoveGGS } from "../../../assets/images";
+import { LanguageSwitcher } from "../../ui";
+import { useTranslation } from "react-i18next";
 
 interface NavItem {
   label: string;
@@ -10,41 +12,42 @@ interface NavItem {
   children?: { label: string; href: string }[];
 }
 
-const navItems: NavItem[] = [
-  { label: "Beranda", href: "#" },
-  {
-    label: "Akademik",
-    children: [
-      { label: "Kurikulum", href: "#kurikulum" },
-      { label: "Visi & Misi", href: "#visi-misi" },
-      { label: "Program", href: "#program" },
-    ],
-  },
-  {
-    label: "Profile",
-    children: [
-      { label: "Guru", href: "#guru" },
-      { label: "Tenaga Kependidikan dan Staff", href: "#staff" },
-      { label: "Fasilitas", href: "#fasilitas" },
-      { label: "Cabang", href: "#cabang" },
-    ],
-  },
-  {
-    label: "News",
-    children: [
-      { label: "Prestasi", href: "#prestasi" },
-      { label: "Article", href: "#article" },
-    ],
-  },
-  { label: "Calender", href: "#calender" },
-];
-
 const MainNavbar: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [openMobileDropdown, setOpenMobileDropdown] = useState<string | null>(
     null,
   );
+
+  const navItems: NavItem[] = [
+    { label: t("home"), href: "#" },
+    {
+      label: t("Akademik"),
+      children: [
+        { label: t("Kurikulum"), href: "#kurikulum" },
+        { label: t("Visi & Misi"), href: "#visi-misi" },
+        { label: t("Program"), href: "#program" },
+      ],
+    },
+    {
+      label: t("Profile"),
+      children: [
+        { label: t("Guru"), href: "#guru" },
+        { label: t("Tenaga Kependidikan dan Staff"), href: "#staff" },
+        { label: t("Fasilitas"), href: "#fasilitas" },
+        { label: t("Cabang"), href: "#cabang" },
+      ],
+    },
+    {
+      label: t("News"),
+      children: [
+        { label: t("Prestasi"), href: "#prestasi" },
+        { label: t("Article"), href: "#article" },
+      ],
+    },
+    { label: t("Calender"), href: "#calender" },
+  ];
 
   const handleDesktopHover = (label: string | null) => {
     setActiveDropdown(label);
@@ -63,33 +66,36 @@ const MainNavbar: React.FC = () => {
       style={{ background: "#23305d", borderBottom: "1px solid #43424e" }}
     >
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="relative flex items-center justify-between h-14 sm:h-16 md:h-20">
+          {/* Logo – kiri */}
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
               <img
                 src={ILoveGGS}
                 alt="Logo Golden Gate School"
-                className="w-23 h-10 md:w-23 md:h-12"
+                className="w-full h-full object-contain"
               />
             </div>
-            <div className="block">
+            <div className="block min-w-0">
               <h1
-                className="text-sm md:text-lg lg:text-xl font-bold leading-tight"
+                className="text-xs sm:text-sm md:text-lg lg:text-xl font-bold leading-tight whitespace-nowrap"
                 style={{ color: "#ffffff" }}
               >
                 GOLDEN
                 <span style={{ color: "#d9ab3f" }}> GATE </span>
                 <span> SCHOOL </span>
               </h1>
-              <p className="text-xs mt-0.5" style={{ color: "#af9151" }}>
+              <p
+                className="text-[10px] sm:text-xs mt-0.5 hidden sm:block"
+                style={{ color: "#af9151" }}
+              >
                 Unggul • Berkarakter • Berprestasi
               </p>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-3">
+          {/* Navigasi Desktop – posisi absolute di tengah */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-3 absolute left-1/2 -translate-x-1/2">
             {navItems.map((item) => {
               if (item.children) {
                 return (
@@ -100,7 +106,7 @@ const MainNavbar: React.FC = () => {
                     onMouseLeave={() => handleDesktopHover(null)}
                   >
                     <button
-                      className="flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-lg"
+                      className="flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-lg whitespace-nowrap"
                       style={{
                         color:
                           activeDropdown === item.label ? "#d9ab3f" : "#af9151",
@@ -124,7 +130,8 @@ const MainNavbar: React.FC = () => {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
                           transition={{ duration: 0.2 }}
-                          className="absolute left-0 mt-1 w-56 py-2 rounded-lg shadow-lg"
+                          // Dropdown lebih lebar agar label panjang tetap satu baris
+                          className="absolute left-0 mt-1 w-64 py-2 rounded-lg shadow-lg"
                           style={{
                             background: "#23305d",
                             border: "1px solid #43424e",
@@ -134,7 +141,7 @@ const MainNavbar: React.FC = () => {
                             <Link
                               key={child.label}
                               to={child.href}
-                              className="block px-4 py-2 text-sm transition-colors"
+                              className="block px-4 py-2 text-sm transition-colors whitespace-nowrap"
                               style={{ color: "#af9151" }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.color = "#d9ab3f";
@@ -161,7 +168,7 @@ const MainNavbar: React.FC = () => {
                 <Link
                   key={item.label}
                   to={item.href!}
-                  className="px-4 py-2 text-sm font-medium transition-colors rounded-lg"
+                  className="px-3 py-2 text-sm font-medium transition-colors rounded-lg whitespace-nowrap"
                   style={{ color: "#af9151" }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = "#d9ab3f";
@@ -179,11 +186,12 @@ const MainNavbar: React.FC = () => {
             })}
           </nav>
 
-          {/* CTA Buttons - Desktop */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* CTA & Language Switcher – kanan */}
+          <div className="hidden md:flex items-center gap-2 ml-auto">
+            <LanguageSwitcher />
             <Link
               to="/ppdb"
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-4 py-2"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-3 py-2 whitespace-nowrap"
               style={{
                 border: "1px solid #d9ab3f",
                 color: "#d9ab3f",
@@ -202,10 +210,10 @@ const MainNavbar: React.FC = () => {
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Tombol menu mobile */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2 rounded-lg transition-colors ml-1"
+            className="lg:hidden p-2 rounded-lg transition-colors ml-1 shrink-0"
             style={{ color: "#d9ab3f" }}
             aria-label="Toggle menu"
           >
@@ -218,7 +226,7 @@ const MainNavbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Menu Mobile – sama seperti sebelumnya, tetap responsif */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -232,7 +240,7 @@ const MainNavbar: React.FC = () => {
             }}
           >
             <div className="container mx-auto px-4 py-4">
-              <nav className="flex flex-col gap-2">
+              <nav className="flex flex-col gap-1">
                 {navItems.map((item) => {
                   if (item.children) {
                     const isOpenDropdown = openMobileDropdown === item.label;
@@ -312,6 +320,9 @@ const MainNavbar: React.FC = () => {
                   className="flex flex-col gap-2 pt-4 mt-2"
                   style={{ borderTop: "1px solid #43424e" }}
                 >
+                  <div className="flex justify-start mb-2">
+                    <LanguageSwitcher />
+                  </div>
                   <Link
                     to="/ppdb"
                     onClick={() => setIsOpen(false)}

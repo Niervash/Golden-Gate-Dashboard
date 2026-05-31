@@ -78,26 +78,16 @@ const ArticleSection: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.15 }}
               viewport={{ once: true }}
-              className="rounded-xl overflow-hidden shadow-lg transition-shadow duration-300 hover:shadow-2xl"
+              className="rounded-xl overflow-hidden  duration-300 "
             >
               {/* Image */}
               <div className="relative h-48 md:h-56 overflow-hidden">
                 <img
                   src={article.image}
                   alt={article.title}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-500  rounded-2xl "
                   loading="lazy"
                 />
-                {/* Category Badge */}
-                <span
-                  className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    background: "#d9ab3f",
-                    color: "#23305d",
-                  }}
-                >
-                  {article.category}
-                </span>
               </div>
 
               {/* Content */}
@@ -107,7 +97,17 @@ const ArticleSection: React.FC = () => {
                   style={{ color: "#94a3b8" }}
                 >
                   {article.date}
+                  <span
+                    className=" ml-4  px-2 py-1 rounded-full text-xs font-semibold "
+                    style={{
+                      background: "#d9ab3f",
+                      color: "#23305d",
+                    }}
+                  >
+                    {article.category}
+                  </span>
                 </time>
+
                 <h3 className="text-lg md:text-xl font-bold mb-3 leading-tight line-clamp-2 text-black">
                   {article.title}
                 </h3>

@@ -1,0 +1,16 @@
+{
+  "translation": {
+    "welcome": "Selamat Datang",
+    "dashboard": "Dasbor",
+    "login": "Masuk",
+    "logout": "Keluar",
+    "profile": "Profil",
+    "settings": "Pengaturan",
+    "home": "Beranda",
+    "about": "Tentang",
+    "contact": "Kontak",
+    "language": "Bahasa",
+    "indonesian": "Bahasa Indonesia",
+    "english": "Bahasa Inggris"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "translation": {
+    "welcome": "Welcome",
+    "dashboard": "Dashboard",
+    "login": "Login",
+    "logout": "Logout",
+    "profile": "Profile",
+    "settings": "Settings",
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "language": "Language",
+    "indonesian": "Indonesian",
+    "english": "English"
+  }
+}

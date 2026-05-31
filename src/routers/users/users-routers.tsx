@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LandingPage, PpdbPage } from "../../pages";
 import { Preloader } from "../../components";
+import { GraduationPage } from "../../features";
 
 const UsersRoute: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +25,7 @@ const UsersRoute: React.FC = () => {
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-        <Route index element={<Navigate to="/home" replace />} />
+          <Route index element={<Navigate to="/home" replace />} />
           <Route
             path="/home"
             element={
@@ -48,6 +49,19 @@ const UsersRoute: React.FC = () => {
                 transition={{ duration: 0.4 }}
               >
                 <PpdbPage />
+              </motion.div>
+            }
+          />
+          <Route
+            path="/graduation"
+            element={
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4 }}
+              >
+                <GraduationPage />
               </motion.div>
             }
           />
