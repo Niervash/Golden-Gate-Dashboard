@@ -117,9 +117,29 @@ const GraduationPage: React.FC = () => {
         .glitch-hover:hover { animation: glitchSimple 0.25s steps(2) forwards; }
         @keyframes borderGlitch { 0% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); } 50% { border-color: #ff00c1; box-shadow: 0 0 6px #ff00c1; } 100% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); } }
         .border-glitch { animation: borderGlitch 0.3s ease-out; }
-        /* Modal styles */
-        .modal-overlay { background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
-        .modal-content { box-shadow: 0 0 30px rgba(251,191,36,0.3); border: 1px solid rgba(251,191,36,0.5); background: linear-gradient(135deg, #1e1b2e, #0f0c1a); }
+        /* Modal retro pixel */
+        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(3px); }
+        .modal-content {
+          background: linear-gradient(145deg, #1a1c2c, #0f0f1a);
+          border: 3px solid #fbbf24;
+          box-shadow: 0 0 0 2px #0f0f1a, 0 0 0 5px rgba(251,191,36,0.3), 0 10px 30px rgba(0,0,0,0.5);
+          image-rendering: crisp-edges;
+        }
+        /* Teks check results lebih bagus */
+        .check-title {
+          font-family: "'Press Start 2P', monospace";
+          font-size: 1rem;
+          letter-spacing: 1px;
+        }
+        .check-sub {
+          font-family: "'Courier New', monospace";
+          font-size: 0.7rem;
+          opacity: 0.8;
+        }
+        @media (min-width: 640px) {
+          .check-title { font-size: 1.25rem; }
+          .check-sub { font-size: 0.8rem; }
+        }
       `}</style>
 
       <div className="min-h-screen text-white font-body relative">
@@ -129,7 +149,7 @@ const GraduationPage: React.FC = () => {
           className="fixed top-4 left-4 z-50 px-3 py-2 text-[10px] sm:text-xs font-heading bg-black/70 text-yellow-400 border-2 border-yellow-400/70 rounded-sm hover:bg-yellow-400 hover:text-black transition-all glitch-hover"
           style={{ fontFamily: "'Press Start 2P', monospace" }}
         >
-          <ArrowBigLeft />
+          <ArrowBigLeft size={18} />
         </button>
 
         <div className="bg-dark" />
@@ -222,10 +242,8 @@ const GraduationPage: React.FC = () => {
             viewport={{ once: true }}
             className="text-center mb-6"
           >
-            <h2 className="text-lg sm:text-xl font-heading text-yellow-400 mb-1">
-              CHECK RESULTS
-            </h2>
-            <p className="text-xs text-cyan-300/70">
+            <h2 className="check-title text-yellow-400 mb-1">CHECK RESULTS</h2>
+            <p className="check-sub text-cyan-300/80">
               Enter your NISN to view graduation status
             </p>
           </motion.div>
@@ -245,6 +263,7 @@ const GraduationPage: React.FC = () => {
               onClick={handleCheck}
               disabled={!nisn}
               className="px-5 py-2 bg-yellow-500 text-black font-heading text-xs sm:text-sm rounded-sm border-b-2 border-yellow-700 hover:border-b-0 hover:translate-y-0.5 disabled:opacity-40 transition-all glitch-hover"
+              style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               CHECK
             </button>
@@ -261,7 +280,10 @@ const GraduationPage: React.FC = () => {
               >
                 {result.found ? (
                   <div className="bg-black/70 backdrop-blur-sm p-5 rounded-md border border-yellow-400/40 shadow-lg">
-                    <h3 className="text-sm font-heading text-yellow-400 text-center mb-3">
+                    <h3
+                      className="text-sm font-heading text-yellow-400 text-center mb-3"
+                      style={{ fontFamily: "'Press Start 2P', monospace" }}
+                    >
                       GRADUATION CARD
                     </h3>
                     <div className="space-y-2 text-sm">
@@ -298,7 +320,10 @@ const GraduationPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="bg-black/70 backdrop-blur-sm p-5 rounded-md border border-red-400/40 text-center">
-                    <p className="text-red-400 text-sm font-heading">
+                    <p
+                      className="text-red-400 text-sm font-heading"
+                      style={{ fontFamily: "'Press Start 2P', monospace" }}
+                    >
                       NISN NOT FOUND
                     </p>
                     <p className="text-white/60 text-xs mt-1">
@@ -318,7 +343,7 @@ const GraduationPage: React.FC = () => {
         </footer>
       </div>
 
-      {/* MODAL CONGRATULATIONS */}
+      {/* MODAL CONGRATULATIONS - Clean, Responsif, Pixel Theme */}
       <AnimatePresence>
         {showModal && modalData && (
           <motion.div
@@ -329,53 +354,53 @@ const GraduationPage: React.FC = () => {
             onClick={() => setShowModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 50 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="modal-content relative max-w-md w-full rounded-xl p-6 text-center"
+              exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
+              className="modal-content relative max-w-md w-full rounded-sm p-6 text-center"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-3 right-3 text-white/60 hover:text-white transition"
+                className="absolute top-3 right-3 text-white/60 hover:text-yellow-400 transition-colors"
               >
-                <X size={20} />
+                <X size={22} />
               </button>
-              <div className="mb-4 text-6xl">🎓✨</div>
+              <div className="mb-3 text-5xl sm:text-6xl">🎓✨</div>
               <h2
-                className="text-2xl sm:text-3xl font-heading text-yellow-400 mb-2"
+                className="text-xl sm:text-2xl font-heading text-yellow-400 mb-2"
                 style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
                 CONGRATULATIONS!
               </h2>
-              <p className="text-white text-lg mt-2">
+              <p className="text-white text-sm sm:text-base mt-2">
                 You have successfully graduated from
               </p>
-              <p className="text-cyan-300 font-bold text-xl">
+              <p className="text-cyan-300 font-bold text-lg sm:text-xl mt-1">
                 GGS International School
               </p>
               <div className="my-4 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
-              <p className="text-sm">
+              <p className="text-sm sm:text-base">
                 <span className="text-cyan-300">Name:</span>{" "}
                 <span className="font-semibold text-white">
                   {modalData.name}
                 </span>
               </p>
-              <p className="text-sm">
+              <p className="text-sm sm:text-base mt-1">
                 <span className="text-cyan-300">Final Average Score:</span>{" "}
                 <span className="text-yellow-300 font-mono font-bold">
                   {modalData.score.toFixed(1)}
                 </span>
               </p>
               {modalData.score >= 85 && (
-                <p className="mt-2 text-yellow-300 text-sm">
+                <p className="mt-2 text-yellow-300 text-xs sm:text-sm">
                   🌟 Excellent Performance! 🌟
                 </p>
               )}
               <button
                 onClick={() => setShowModal(false)}
-                className="mt-6 px-6 py-2 bg-yellow-500 text-black font-heading text-sm rounded-sm border-b-2 border-yellow-700 hover:border-b-0 hover:translate-y-0.5 transition-all glitch-hover"
+                className="mt-6 px-5 py-2 bg-yellow-500 text-black font-heading text-xs sm:text-sm rounded-sm border-b-2 border-yellow-700 hover:border-b-0 hover:translate-y-0.5 transition-all glitch-hover"
                 style={{ fontFamily: "'Press Start 2P', monospace" }}
               >
                 CLOSE
