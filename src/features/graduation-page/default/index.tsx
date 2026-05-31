@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ILoveGGS } from "../../../assets";
+import { ILoveGGS, ILovemyMusic } from "../../../assets";
 import confetti from "canvas-confetti";
 import { ArrowBigLeft, X, Music, Pause } from "lucide-react";
 
@@ -71,15 +71,25 @@ const GraduationPage: React.FC = () => {
     }
   }, [result]);
 
-  // Initialize audio and cleanup
+  // Initialize audio and attempt autoplay
   useEffect(() => {
-    const audio = new Audio(
-      "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf6a9.mp3?filename=graduation-choir-122237.mp3",
-    );
+    const audio = new Audio(ILovemyMusic);
     audio.loop = true;
-    audio.volume = 0.3;
+    audio.volume = 0.8;
     audio.preload = "auto";
     audioRef.current = audio;
+
+    // Auto-play music when page loads
+    audio
+      .play()
+      .then(() => {
+        setIsMusicPlaying(true);
+      })
+      .catch((err) => {
+        console.warn("Autoplay was prevented by browser:", err);
+        setIsMusicPlaying(false);
+        // Optional: show a subtle hint that user needs to click the music button
+      });
 
     return () => {
       if (audioRef.current) {
@@ -113,7 +123,6 @@ const GraduationPage: React.FC = () => {
         averageScore: student.averageScore,
       });
       if (student.status === "GRADUATED") {
-        // Elegant gold and navy confetti
         confetti({
           particleCount: 180,
           spread: 100,
@@ -231,8 +240,14 @@ const GraduationPage: React.FC = () => {
         .decor-line {
           height: 2px;
           background: linear-gradient(90deg, transparent, #C5A059, #D4AF37, #C5A059, transparent);
-          width: 100px;
+          width: 80px;
           margin: 0 auto;
+        }
+        
+        @media (min-width: 640px) {
+          .decor-line {
+            width: 100px;
+          }
         }
         
         .text-navy {
@@ -247,31 +262,35 @@ const GraduationPage: React.FC = () => {
       `}</style>
 
       <div className="min-h-screen bg-gradient-ceremony font-sans-modern text-gray-800 relative">
-        {/* Tombol Kembali */}
+        {/* Tombol Kembali - Responsif */}
         <button
           onClick={() => window.history.back()}
-          className="fixed top-5 left-5 z-50 flex items-center gap-1 px-4 py-2 text-xs font-medium bg-white/80 backdrop-blur-sm text-[#23305d] border border-[#C5A059]/50 rounded-full shadow-sm hover:bg-[#C5A059] hover:text-white hover:border-[#C5A059] transition-all"
+          className="fixed top-4 left-4 z-50 flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-white/80 backdrop-blur-sm text-[#23305d] border border-[#C5A059]/50 rounded-full shadow-sm hover:bg-[#C5A059] hover:text-white hover:border-[#C5A059] transition-all sm:top-5 sm:left-5 sm:px-4 sm:py-2"
         >
-          <ArrowBigLeft size={16} />
-          <span>Back</span>
+          <ArrowBigLeft size={14} className="sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Back</span>
         </button>
 
-        {/* Music Entrance Button */}
+        {/* Music Entrance Button - Responsif (lebih kecil di mobile) */}
         <button
           onClick={toggleMusic}
-          className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-12 h-12 rounded-full music-btn shadow-md"
+          className="fixed bottom-5 right-5 z-50 flex items-center justify-center w-10 h-10 rounded-full music-btn shadow-md sm:bottom-6 sm:right-6 sm:w-12 sm:h-12"
           aria-label="Entrance Music"
         >
-          {isMusicPlaying ? <Pause size={22} /> : <Music size={22} />}
+          {isMusicPlaying ? (
+            <Pause size={18} className="sm:w-5 sm:h-5" />
+          ) : (
+            <Music size={18} className="sm:w-5 sm:h-5" />
+          )}
         </button>
 
-        {/* HERO SECTION */}
-        <section className="relative flex flex-col items-center justify-center px-4 pt-16 pb-12 min-h-[75vh] text-center">
+        {/* HERO SECTION - Padding dan min-height lebih kecil di mobile */}
+        <section className="relative flex flex-col items-center justify-center px-4 pt-10 pb-8 min-h-[60vh] sm:pt-16 sm:pb-12 sm:min-h-[75vh] text-center">
           <motion.div
             initial={{ y: -8, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="w-28 md:w-36 h-auto mb-5"
+            className="w-20 md:w-28 h-auto mb-4 sm:w-28 sm:mb-5"
           >
             <img
               src={ILoveGGS}
@@ -286,16 +305,16 @@ const GraduationPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-center"
           >
-            <h1 className="font-serif-elegant text-3xl sm:text-4xl md:text-5xl font-bold tracking-wide leading-tight">
+            <h1 className="font-serif-elegant text-2xl sm:text-4xl md:text-5xl font-bold tracking-wide leading-tight">
               <span className="text-[#23305d]">Graduation</span>
               <br />
               <span className="text-[#C5A059]">Announcement 2026</span>
             </h1>
-            <div className="decor-line my-4"></div>
-            <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-[#23305d] mt-2">
+            <div className="decor-line my-3 sm:my-4"></div>
+            <h2 className="text-base sm:text-xl md:text-2xl font-medium text-[#23305d] mt-2">
               GGS International School
             </h2>
-            <p className="text-sm sm:text-base text-gray-500 mt-3 max-w-md mx-auto italic">
+            <p className="text-xs sm:text-sm text-gray-500 mt-2 max-w-md mx-auto italic px-2">
               "Honoring Excellence, Embracing the Future"
             </p>
           </motion.div>
@@ -304,11 +323,11 @@ const GraduationPage: React.FC = () => {
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.25, duration: 0.5 }}
-            className="w-full max-w-2xl mx-auto mt-8"
+            className="w-full max-w-2xl mx-auto mt-6 sm:mt-8"
           >
-            <div className="bg-white/90 card-elegant rounded-xl p-6 md:p-7 gold-shadow">
-              <p className="text-base md:text-lg leading-relaxed text-gray-700">
-                <span className="font-serif-elegant text-xl font-semibold text-[#C5A059] block mb-2">
+            <div className="bg-white/90 card-elegant rounded-xl p-5 md:p-7 gold-shadow">
+              <p className="text-sm md:text-base lg:text-lg leading-relaxed text-gray-700">
+                <span className="font-serif-elegant text-lg sm:text-xl font-semibold text-[#C5A059] block mb-2">
                   Dear Students & Families,
                 </span>
                 With immense pride and joy, we celebrate the graduation of the
@@ -316,7 +335,7 @@ const GraduationPage: React.FC = () => {
                 led you to this historic milestone. May you continue to
                 illuminate the world with knowledge and compassion.
               </p>
-              <p className="mt-5 text-[#23305d] font-serif-elegant font-semibold text-right text-sm tracking-wide">
+              <p className="mt-4 text-[#23305d] font-serif-elegant font-semibold text-right text-xs sm:text-sm tracking-wide">
                 — Principal of Golden Gate School
               </p>
             </div>
@@ -331,7 +350,7 @@ const GraduationPage: React.FC = () => {
                 .getElementById("check-section")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="mt-10 px-7 py-3 text-sm font-semibold rounded-full btn-gold shadow-md"
+            className="mt-8 sm:mt-10 px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-full btn-gold shadow-md"
           >
             VIEW YOUR GRADUATION STATUS
           </motion.button>
@@ -340,25 +359,25 @@ const GraduationPage: React.FC = () => {
         {/* CHECK RESULTS SECTION */}
         <section
           id="check-section"
-          className="relative py-16 px-4 flex flex-col items-center bg-white/40"
+          className="relative py-12 px-4 flex flex-col items-center bg-white/40 sm:py-16"
         >
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4 }}
-            className="text-center mb-7"
+            className="text-center mb-6 sm:mb-7"
           >
-            <h2 className="font-serif-elegant text-3xl md:text-4xl font-semibold text-[#23305d]">
+            <h2 className="font-serif-elegant text-2xl sm:text-3xl md:text-4xl font-semibold text-[#23305d]">
               Check Your Result
             </h2>
-            <div className="w-16 h-0.5 bg-[#C5A059] mx-auto mt-3 mb-3"></div>
-            <p className="text-gray-600 text-sm max-w-md">
+            <div className="w-12 h-0.5 bg-[#C5A059] mx-auto mt-2 mb-2 sm:w-16 sm:mt-3 sm:mb-3"></div>
+            <p className="text-gray-600 text-xs sm:text-sm max-w-md">
               Please enter your 10-digit NISN to verify graduation status
             </p>
           </motion.div>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mb-10">
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md mb-8 sm:mb-10">
             <input
               type="text"
               inputMode="numeric"
@@ -368,12 +387,12 @@ const GraduationPage: React.FC = () => {
                 setResult(null);
                 setNisn(e.target.value.replace(/\D/g, "").slice(0, 10));
               }}
-              className="flex-1 px-5 py-3 rounded-full input-elegant font-mono text-sm shadow-sm"
+              className="flex-1 px-4 py-2.5 rounded-full input-elegant font-mono text-sm shadow-sm sm:px-5 sm:py-3"
             />
             <button
               onClick={handleCheck}
               disabled={!nisn}
-              className="px-6 py-3 rounded-full btn-gold text-sm font-semibold disabled:opacity-40 disabled:pointer-events-none shadow-sm"
+              className="px-5 py-2.5 rounded-full btn-gold text-sm font-semibold disabled:opacity-40 disabled:pointer-events-none shadow-sm sm:px-6 sm:py-3"
             >
               VERIFY NISN
             </button>
@@ -390,31 +409,33 @@ const GraduationPage: React.FC = () => {
                 className="w-full max-w-md"
               >
                 {result.found ? (
-                  <div className="card-elegant bg-white rounded-2xl p-6 gold-shadow">
-                    <h3 className="font-serif-elegant text-xl font-bold text-[#C5A059] text-center border-b border-[#C5A059]/30 pb-2 mb-4">
+                  <div className="card-elegant bg-white rounded-2xl p-5 gold-shadow sm:p-6">
+                    <h3 className="font-serif-elegant text-lg sm:text-xl font-bold text-[#C5A059] text-center border-b border-[#C5A059]/30 pb-2 mb-3 sm:mb-4">
                       Graduation Credential
                     </h3>
-                    <div className="space-y-3 text-gray-800">
+                    <div className="space-y-2 text-gray-800 sm:space-y-3">
                       <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span className="font-semibold text-gray-600">
+                        <span className="font-semibold text-gray-600 text-sm sm:text-base">
                           NAME
                         </span>
-                        <span className="font-medium text-right">
+                        <span className="font-medium text-right text-sm sm:text-base">
                           {result.name}
                         </span>
                       </div>
                       <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span className="font-semibold text-gray-600">
+                        <span className="font-semibold text-gray-600 text-sm sm:text-base">
                           NISN
                         </span>
-                        <span className="font-mono text-sm">{nisn}</span>
+                        <span className="font-mono text-xs sm:text-sm">
+                          {nisn}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center pt-1">
-                        <span className="font-semibold text-gray-600">
+                        <span className="font-semibold text-gray-600 text-sm sm:text-base">
                           STATUS
                         </span>
                         <span
-                          className={`font-bold ${result.status === "GRADUATED" ? "text-green-700" : "text-red-600"}`}
+                          className={`font-bold text-sm sm:text-base ${result.status === "GRADUATED" ? "text-green-700" : "text-red-600"}`}
                         >
                           {result.status === "GRADUATED"
                             ? "GRADUATED ✓"
@@ -424,10 +445,10 @@ const GraduationPage: React.FC = () => {
                       {result.status === "GRADUATED" &&
                         result.averageScore !== undefined && (
                           <div className="flex justify-between items-center bg-[#F9F5EB] p-3 rounded-lg mt-2">
-                            <span className="font-semibold text-gray-700">
+                            <span className="font-semibold text-gray-700 text-sm sm:text-base">
                               FINAL AVERAGE
                             </span>
-                            <span className="font-mono text-lg font-bold text-[#C5A059]">
+                            <span className="font-mono text-base sm:text-lg font-bold text-[#C5A059]">
                               {result.averageScore.toFixed(1)}
                             </span>
                           </div>
@@ -435,11 +456,11 @@ const GraduationPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl p-6 text-center border border-red-200 shadow-sm">
-                    <p className="text-red-600 font-semibold text-lg">
+                  <div className="bg-white rounded-2xl p-5 text-center border border-red-200 shadow-sm sm:p-6">
+                    <p className="text-red-600 font-semibold text-base sm:text-lg">
                       NISN Not Found
                     </p>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-gray-500 text-xs sm:text-sm mt-1">
                       Please verify your number and try again.
                     </p>
                   </div>
@@ -449,21 +470,21 @@ const GraduationPage: React.FC = () => {
           </AnimatePresence>
         </section>
 
-        <footer className="py-6 text-center border-t border-[#C5A059]/20 bg-white/50">
-          <p className="text-xs text-gray-500 font-mono tracking-wide">
+        <footer className="py-5 text-center border-t border-[#C5A059]/20 bg-white/50 sm:py-6">
+          <p className="text-[10px] text-gray-500 font-mono tracking-wide sm:text-xs">
             © 2026 GGS International School — All Rights Reserved
           </p>
         </footer>
       </div>
 
-      {/* MODAL CONGRATULATIONS - Elegant & Official with Navy */}
+      {/* MODAL CONGRATULATIONS - Responsif */}
       <AnimatePresence>
         {showModal && modalData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#23305d]/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-3 bg-[#23305d]/60 backdrop-blur-sm sm:p-4"
             onClick={() => setShowModal(false)}
           >
             <motion.div
@@ -471,48 +492,48 @@ const GraduationPage: React.FC = () => {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 15 }}
               transition={{ type: "spring", damping: 28, stiffness: 400 }}
-              className="modal-gold relative max-w-md w-full rounded-2xl p-7 text-center"
+              className="modal-gold relative max-w-sm sm:max-w-md w-full rounded-2xl p-5 text-center sm:p-7"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-[#C5A059] transition"
+                className="absolute top-2 right-2 text-gray-400 hover:text-[#C5A059] transition sm:top-4 sm:right-4"
               >
-                <X size={22} />
+                <X size={18} className="sm:w-5 sm:h-5" />
               </button>
-              <div className="mb-3 text-6xl">🎓✨</div>
-              <h2 className="font-serif-elegant text-2xl md:text-3xl font-bold text-[#23305d]">
+              <div className="mb-2 text-5xl sm:mb-3 sm:text-6xl">🎓✨</div>
+              <h2 className="font-serif-elegant text-xl sm:text-2xl md:text-3xl font-bold text-[#23305d]">
                 Congratulations!
               </h2>
-              <p className="text-gray-700 text-sm mt-2">
+              <p className="text-gray-700 text-xs sm:text-sm mt-2">
                 You have officially graduated from
               </p>
-              <p className="text-[#C5A059] font-serif-elegant text-xl font-semibold mt-1">
+              <p className="text-[#C5A059] font-serif-elegant text-lg sm:text-xl font-semibold mt-1">
                 GGS International School
               </p>
-              <div className="my-4 w-20 h-px bg-gradient-to-r from-transparent via-[#C5A059] to-transparent mx-auto"></div>
+              <div className="my-3 w-16 h-px bg-gradient-to-r from-transparent via-[#C5A059] to-transparent mx-auto sm:my-4 sm:w-20"></div>
               <div className="space-y-1 text-gray-800">
-                <p className="text-base">
+                <p className="text-sm sm:text-base">
                   <span className="font-semibold text-gray-600">Name:</span>{" "}
                   <span className="font-medium">{modalData.name}</span>
                 </p>
-                <p className="text-base">
+                <p className="text-sm sm:text-base">
                   <span className="font-semibold text-gray-600">
                     Average Score:
                   </span>{" "}
-                  <span className="font-mono font-bold text-[#C5A059] text-lg">
+                  <span className="font-mono font-bold text-[#C5A059] text-base sm:text-lg">
                     {modalData.score.toFixed(1)}
                   </span>
                 </p>
               </div>
               {modalData.score >= 85 && (
-                <p className="mt-3 text-[#C5A059] text-sm font-medium">
+                <p className="mt-2 text-[#C5A059] text-xs sm:text-sm font-medium sm:mt-3">
                   ⭐ Distinction Honors ⭐
                 </p>
               )}
               <button
                 onClick={() => setShowModal(false)}
-                className="mt-6 px-6 py-2 rounded-full btn-gold text-sm font-semibold"
+                className="mt-5 px-5 py-1.5 rounded-full btn-gold text-xs sm:text-sm font-semibold sm:mt-6 sm:px-6 sm:py-2"
               >
                 CLOSE
               </button>
