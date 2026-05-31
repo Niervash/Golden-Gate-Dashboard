@@ -9,7 +9,7 @@ const TextThrough = () => {
             GOLDEN <span className="text-blue-700">GATE</span> SCHOOL
           </b>
         </span>
-        󠁯 •󠁏 Systems and Technologies in Artificial Intelligence Applications →
+        󠁯 •󠁏 International School →
       </a>
     </div>
   );

@@ -317,7 +317,7 @@ const GraduationPage: React.FC = () => {
                 illuminate the world with knowledge and compassion.
               </p>
               <p className="mt-5 text-[#23305d] font-serif-elegant font-semibold text-right text-sm tracking-wide">
-                — Dr. Helena Morrison, Principal
+                — Principal of Golden Gate School
               </p>
             </div>
           </motion.div>

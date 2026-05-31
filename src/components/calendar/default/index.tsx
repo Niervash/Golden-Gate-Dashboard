@@ -25,13 +25,13 @@ const events: Event[] = [
   {
     id: 1,
     route: "graduation",
-    title: "🎓 Graduation Ceremony & Announcement 2026",
+    title: "🎓  Graduation Announcement 2026",
     isoDate: "2026-06-02",
     time: "05:00  WIT",
     location: "ONLINE",
     category: "Akademik",
     description:
-      "pengumuman kelulusan untuk siswa Kelas 9. Yang di berlangsungkan secara online.",
+      "Pengumuman kelulusan untuk siswa Kelas 9. Yang di berlangsungkan secara ONLINE.",
   },
 ];
 
