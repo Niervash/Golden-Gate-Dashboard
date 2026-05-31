@@ -27,11 +27,11 @@ const events: Event[] = [
     route: "graduation",
     title: "🎓 Graduation Ceremony & Announcement 2026",
     isoDate: "2026-06-02",
-    time: "09:00 - 12:00 WIB",
-    location: "Aula Utama GGS",
+    time: "05:00  WIT",
+    location: "ONLINE",
     category: "Akademik",
     description:
-      "Upacara wisuda dan pengumuman kelulusan untuk siswa Kelas 12. Acara akan dihadiri oleh Kepala Sekolah, para guru, dan orang tua. Ijazah resmi akan dibagikan. Kami merayakan pencapaian dan awal baru bagi para lulusan.",
+      "pengumuman kelulusan untuk siswa Kelas 9. Yang di berlangsungkan secara online.",
   },
 ];
 

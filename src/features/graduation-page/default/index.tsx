@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ILoveGGS } from "../../../assets";
-import confetti from "canvas-confetti"; // [CONFETTI] import library
+import confetti from "canvas-confetti";
+import { ArrowBigLeft, X } from "lucide-react";
 
+// Data siswa
 const dummyStudents = [
-  { nisn: "1234567890", name: "Alya Khansa", status: "GRADUATED" },
-  { nisn: "0987654321", name: "Bima Aditya", status: "NOT_GRADUATED" },
-  { nisn: "1122334455", name: "Citra Lestari", status: "GRADUATED" },
-  { nisn: "5566778899", name: "Dimas Pratama", status: "GRADUATED" },
+  {
+    nisn: "1234567890",
+    name: "Ariqah Jinan Khayyirah",
+    status: "GRADUATED",
+    averageScore: 83,
+  },
+  {
+    nisn: "0987654321",
+    name: "Naylah Nafisa Ayu",
+    status: "GRADUATED",
+    averageScore: 82,
+  },
+  {
+    nisn: "1122334455",
+    name: "Damai Gratia Tri Tanga Putri",
+    status: "GRADUATED",
+    averageScore: 89,
+  },
 ];
 
 const GraduationPage: React.FC = () => {
@@ -16,16 +32,52 @@ const GraduationPage: React.FC = () => {
     found: boolean;
     name?: string;
     status?: string;
+    averageScore?: number;
   } | null>(null);
   const [glitchActive, setGlitchActive] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState<{
+    name: string;
+    score: number;
+  } | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (
+      result &&
+      result.found &&
+      result.status === "GRADUATED" &&
+      result.name &&
+      result.averageScore !== undefined
+    ) {
+      setModalData({ name: result.name, score: result.averageScore });
+      setShowModal(true);
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    } else if (result && !result.found) {
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    }
+  }, [result]);
 
   const handleCheck = () => {
     const student = dummyStudents.find((s) => s.nisn === nisn.trim());
     if (student) {
-      setResult({ found: true, name: student.name, status: student.status });
-      // [CONFETTI] Jika lulus, ledakkan confetti
+      setResult({
+        found: true,
+        name: student.name,
+        status: student.status,
+        averageScore: student.averageScore,
+      });
       if (student.status === "GRADUATED") {
-        // Konfetti utama dari tengah
         confetti({
           particleCount: 200,
           spread: 100,
@@ -33,14 +85,12 @@ const GraduationPage: React.FC = () => {
           startVelocity: 20,
           colors: ["#fbbf24", "#34d399", "#60a5fa", "#f472b6"],
         });
-        // Konfetti tambahan dari kiri
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.7, x: 0.2 },
           startVelocity: 25,
         });
-        // Konfetti tambahan dari kanan
         confetti({
           particleCount: 100,
           spread: 70,
@@ -58,80 +108,30 @@ const GraduationPage: React.FC = () => {
   return (
     <>
       <style>{`
-        /* Background gradien gelap + grid yang jelas */
-        .bg-dark {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(135deg, #0a0c12 0%, #0f111a 100%);
-          z-index: -3;
-        }
-        /* Grid yang jelas dan tebal */
-        .grid-clear {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-image: 
-            linear-gradient(to right, rgba(0, 255, 255, 0.15) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0, 255, 255, 0.15) 1px, transparent 1px);
-          background-size: 40px 40px;
-          pointer-events: none;
-          z-index: -2;
-        }
-        /* Noise grunge halus */
-        .noise-light {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.2'/%3E%3C/svg%3E");
-          background-repeat: repeat;
-          pointer-events: none;
-          z-index: -1;
-          mix-blend-mode: overlay;
-        }
-        /* Scanline sangat tipis */
-        .scanline-faint {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 4px);
-          pointer-events: none;
-          z-index: 1;
-        }
-        /* Efek glitch sederhana namun terlihat */
-        @keyframes glitchSimple {
-          0% { text-shadow: -2px 0 #ff00c1, 2px 0 #00fff9; transform: skew(0deg); }
-          25% { text-shadow: -3px 0 #ff00c1, 3px 0 #00fff9; transform: skew(2deg); }
-          50% { text-shadow: -1px 0 #ff00c1, 1px 0 #00fff9; transform: skew(-1deg); }
-          75% { text-shadow: -2px 0 #ff00c1, 2px 0 #00fff9; transform: skew(1deg); }
-          100% { text-shadow: 0 0 0 transparent; transform: skew(0deg); }
-        }
-        .glitch-text {
-          animation: glitchSimple 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-        .glitch-hover:hover {
-          animation: glitchSimple 0.25s steps(2) forwards;
-        }
-        /* Glitch border ringan */
-        @keyframes borderGlitch {
-          0% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); }
-          50% { border-color: #ff00c1; box-shadow: 0 0 6px #ff00c1; }
-          100% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); }
-        }
-        .border-glitch {
-          animation: borderGlitch 0.3s ease-out;
-        }
+        .bg-dark { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0a0c12 0%, #0f111a 100%); z-index: -3; }
+        .grid-clear { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(to right, rgba(0, 255, 255, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 255, 255, 0.15) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: -2; }
+        .noise-light { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.2'/%3E%3C/svg%3E"); background-repeat: repeat; pointer-events: none; z-index: -1; mix-blend-mode: overlay; }
+        .scanline-faint { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 4px); pointer-events: none; z-index: 1; }
+        @keyframes glitchSimple { 0% { text-shadow: -2px 0 #ff00c1, 2px 0 #00fff9; transform: skew(0deg); } 25% { text-shadow: -3px 0 #ff00c1, 3px 0 #00fff9; transform: skew(2deg); } 50% { text-shadow: -1px 0 #ff00c1, 1px 0 #00fff9; transform: skew(-1deg); } 75% { text-shadow: -2px 0 #ff00c1, 2px 0 #00fff9; transform: skew(1deg); } 100% { text-shadow: 0 0 0 transparent; transform: skew(0deg); } }
+        .glitch-text { animation: glitchSimple 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        .glitch-hover:hover { animation: glitchSimple 0.25s steps(2) forwards; }
+        @keyframes borderGlitch { 0% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); } 50% { border-color: #ff00c1; box-shadow: 0 0 6px #ff00c1; } 100% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); } }
+        .border-glitch { animation: borderGlitch 0.3s ease-out; }
+        /* Modal styles */
+        .modal-overlay { background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
+        .modal-content { box-shadow: 0 0 30px rgba(251,191,36,0.3); border: 1px solid rgba(251,191,36,0.5); background: linear-gradient(135deg, #1e1b2e, #0f0c1a); }
       `}</style>
 
       <div className="min-h-screen text-white font-body relative">
+        {/* Tombol Kembali */}
+        <button
+          onClick={() => window.history.back()}
+          className="fixed top-4 left-4 z-50 px-3 py-2 text-[10px] sm:text-xs font-heading bg-black/70 text-yellow-400 border-2 border-yellow-400/70 rounded-sm hover:bg-yellow-400 hover:text-black transition-all glitch-hover"
+          style={{ fontFamily: "'Press Start 2P', monospace" }}
+        >
+          <ArrowBigLeft />
+        </button>
+
         <div className="bg-dark" />
         <div className="grid-clear" />
         <div className="noise-light" />
@@ -147,7 +147,6 @@ const GraduationPage: React.FC = () => {
           >
             <img src={ILoveGGS} alt="Logo" className="w-full object-contain" />
           </motion.div>
-
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -155,9 +154,7 @@ const GraduationPage: React.FC = () => {
             className="text-center mb-5"
           >
             <h1
-              className={`text-xl sm:text-2xl md:text-3xl font-heading leading-tight ${
-                glitchActive ? "glitch-text" : "glitch-hover"
-              }`}
+              className={`text-xl sm:text-2xl md:text-3xl font-heading leading-tight ${glitchActive ? "glitch-text" : "glitch-hover"}`}
               style={{
                 fontFamily: "'Press Start 2P', monospace",
                 color: "#fbbf24",
@@ -176,8 +173,6 @@ const GraduationPage: React.FC = () => {
               "Celebrating Achievement, Excellence, and New Beginnings"
             </p>
           </motion.div>
-
-          {/* Principal Message - lebih besar dan jelas */}
           <motion.div
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -200,8 +195,6 @@ const GraduationPage: React.FC = () => {
               — PRINCIPAL
             </p>
           </motion.div>
-
-          {/* Tombol Login */}
           <motion.button
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -236,7 +229,6 @@ const GraduationPage: React.FC = () => {
               Enter your NISN to view graduation status
             </p>
           </motion.div>
-
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm mb-8">
             <input
               type="text"
@@ -261,6 +253,7 @@ const GraduationPage: React.FC = () => {
           <AnimatePresence mode="wait">
             {result && (
               <motion.div
+                ref={resultRef}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -290,15 +283,17 @@ const GraduationPage: React.FC = () => {
                             : "NOT GRADUATED"}
                         </span>
                       </p>
-                      {result.status === "GRADUATED" ? (
-                        <div className="mt-3 text-green-300/80 text-xs border-t border-yellow-400/30 pt-2">
-                          🎉 Congratulations! You have successfully graduated.
-                        </div>
-                      ) : (
-                        <div className="mt-3 text-red-300/80 text-xs border-t border-yellow-400/30 pt-2">
-                          Please contact your homeroom teacher for guidance.
-                        </div>
-                      )}
+                      {result.status === "GRADUATED" &&
+                        result.averageScore !== undefined && (
+                          <p className="text-sm">
+                            <span className="text-cyan-300">
+                              AVERAGE SCORE:
+                            </span>{" "}
+                            <span className="font-mono text-yellow-300">
+                              {result.averageScore.toFixed(1)}
+                            </span>
+                          </p>
+                        )}
                     </div>
                   </div>
                 ) : (
@@ -322,6 +317,73 @@ const GraduationPage: React.FC = () => {
           </p>
         </footer>
       </div>
+
+      {/* MODAL CONGRATULATIONS */}
+      <AnimatePresence>
+        {showModal && modalData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-overlay"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 50 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              className="modal-content relative max-w-md w-full rounded-xl p-6 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowModal(false)}
+                className="absolute top-3 right-3 text-white/60 hover:text-white transition"
+              >
+                <X size={20} />
+              </button>
+              <div className="mb-4 text-6xl">🎓✨</div>
+              <h2
+                className="text-2xl sm:text-3xl font-heading text-yellow-400 mb-2"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                CONGRATULATIONS!
+              </h2>
+              <p className="text-white text-lg mt-2">
+                You have successfully graduated from
+              </p>
+              <p className="text-cyan-300 font-bold text-xl">
+                GGS International School
+              </p>
+              <div className="my-4 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
+              <p className="text-sm">
+                <span className="text-cyan-300">Name:</span>{" "}
+                <span className="font-semibold text-white">
+                  {modalData.name}
+                </span>
+              </p>
+              <p className="text-sm">
+                <span className="text-cyan-300">Final Average Score:</span>{" "}
+                <span className="text-yellow-300 font-mono font-bold">
+                  {modalData.score.toFixed(1)}
+                </span>
+              </p>
+              {modalData.score >= 85 && (
+                <p className="mt-2 text-yellow-300 text-sm">
+                  🌟 Excellent Performance! 🌟
+                </p>
+              )}
+              <button
+                onClick={() => setShowModal(false)}
+                className="mt-6 px-6 py-2 bg-yellow-500 text-black font-heading text-sm rounded-sm border-b-2 border-yellow-700 hover:border-b-0 hover:translate-y-0.5 transition-all glitch-hover"
+                style={{ fontFamily: "'Press Start 2P', monospace" }}
+              >
+                CLOSE
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
