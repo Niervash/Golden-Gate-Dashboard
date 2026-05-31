@@ -21,6 +21,14 @@ This log documents the features and changes implemented by Gemini AI in the Gold
   - Wrapped navbar labels with the `t()` translation function.
 - **`src/components/ui/index.tsx`**: Exported the `LanguageSwitcher` component.
 
+## [2026-05-31] - Deployment & Routing Fix
+
+### Added
+- **`vercel.json`**: Added rewrite rules to support SPA routing on Vercel, fixing the 404 error on refresh.
+
+### Fixed
+- **`SyntaxError` in `LanguageSwitcher`**: Resolved "does not provide an export named 'MenuProps'" by using type-only imports (`import type`).
+
 ### How to Use
 1. **Translate Text**: Use the `useTranslation` hook from `react-i18next` in any component.
    ```tsx
