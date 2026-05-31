@@ -7,19 +7,19 @@ import { ArrowBigLeft, X } from "lucide-react";
 // Data siswa
 const dummyStudents = [
   {
-    nisn: "1234567890",
+    nisn: "0101609144",
     name: "Ariqah Jinan Khayyirah",
     status: "GRADUATED",
     averageScore: 83,
   },
   {
-    nisn: "0987654321",
+    nisn: "0105891076",
     name: "Naylah Nafisa Ayu",
     status: "GRADUATED",
     averageScore: 82,
   },
   {
-    nisn: "1122334455",
+    nisn: "0113844726",
     name: "Damai Gratia Tri Tanga Putri",
     status: "GRADUATED",
     averageScore: 89,
