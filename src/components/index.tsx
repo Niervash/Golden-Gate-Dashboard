@@ -12,6 +12,10 @@ export * from "./navbar-PPDB";
 export * from "./PPDB-form";
 export * from "./footer-PPDB";
 export * from "./header-dashboard";
-export * from "./admin-dashboard";
+export * from "./tu-dashboard";
+export * from "./artikel";
+export * from "./calendar";
+export * from "./admin-data-guru";
+export * from "./text-through";
 
 export { CardLogin, LoginBranding, Preloader };

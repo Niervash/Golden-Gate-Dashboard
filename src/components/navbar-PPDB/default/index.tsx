@@ -20,7 +20,7 @@ const NavbarPpdb: React.FC = () => {
         color: "#ffffff",
       }}
     >
-      <div className="container mx-auto px-4 p-10">
+      <div className="container mx-auto px-4 p-2">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0">

@@ -7,9 +7,6 @@ interface props {}
 const AdminPages: React.FC<props> = () => {
   return (
     <>
-      {/* <AdminLayout>
-        <PPDBAdminDashboard />
-      </AdminLayout> */}
       <AdminLayout>
         <PPDBAdminDashboard />
       </AdminLayout>

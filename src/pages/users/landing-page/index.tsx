@@ -1,9 +1,12 @@
 import React from "react";
 import {
+  ArticleSection,
+  CalendarEvent,
   ContactSection,
   CtaSection,
   MainHero,
   NavbarPpdb,
+  TextThrough,
 } from "../../../components";
 import { UsersLayout } from "../../../layouts";
 
@@ -12,6 +15,8 @@ const LandingPage: React.FC = () => {
     <div>
       <UsersLayout>
         <MainHero />
+        <ArticleSection />
+        <CalendarEvent />
         <ContactSection />
         <CtaSection />
       </UsersLayout>

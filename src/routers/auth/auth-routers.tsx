@@ -24,7 +24,6 @@ const AuthRouters: React.FC = () => {
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route index element={<Navigate to="/login" replace />} />
           <Route
             path="/login"
             element={

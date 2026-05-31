@@ -24,7 +24,7 @@ const UsersRoute: React.FC = () => {
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route index element={<Navigate to="/home" replace />} />
+        <Route index element={<Navigate to="/home" replace />} />
           <Route
             path="/home"
             element={

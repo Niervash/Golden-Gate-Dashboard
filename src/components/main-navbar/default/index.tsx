@@ -1,42 +1,66 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ILoveGGS } from "../../../assets/images";
 
 interface NavItem {
   label: string;
-  href: string;
+  href?: string;
+  children?: { label: string; href: string }[];
 }
 
 const navItems: NavItem[] = [
   { label: "Beranda", href: "#" },
-  { label: "Profil", href: "#profil" },
-  { label: "Program", href: "#program" },
-  { label: "Prestasi", href: "#prestasi" },
-  { label: "Artikel", href: "#artikel" },
-  { label: "Berita", href: "#berita" },
-  { label: "Kalender", href: "#kalender" },
-  { label: "Kontak", href: "#kontak" },
+  {
+    label: "Akademik",
+    children: [
+      { label: "Kurikulum", href: "#kurikulum" },
+      { label: "Visi & Misi", href: "#visi-misi" },
+      { label: "Program", href: "#program" },
+    ],
+  },
+  {
+    label: "Profile",
+    children: [
+      { label: "Guru", href: "#guru" },
+      { label: "Tenaga Kependidikan dan Staff", href: "#staff" },
+      { label: "Fasilitas", href: "#fasilitas" },
+      { label: "Cabang", href: "#cabang" },
+    ],
+  },
+  {
+    label: "News",
+    children: [
+      { label: "Prestasi", href: "#prestasi" },
+      { label: "Article", href: "#article" },
+    ],
+  },
+  { label: "Calender", href: "#calender" },
 ];
 
 const MainNavbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [openMobileDropdown, setOpenMobileDropdown] = useState<string | null>(
+    null,
+  );
+
+  const handleDesktopHover = (label: string | null) => {
+    setActiveDropdown(label);
+  };
+
+  const toggleMobileDropdown = (label: string) => {
+    setOpenMobileDropdown((prev) => (prev === label ? null : label));
+  };
 
   return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 100,
-        damping: 20,
-      }}
-      className="fixed top-0 left-0 right-0 z-50 p-2"
-      style={{
-        background: "#23305d",
-        borderBottom: "1px solid #43424e",
-      }}
+      transition={{ type: "spring", stiffness: 100, damping: 20 }}
+      className="sticky top-0 z-50 p-2"
+      style={{ background: "#23305d", borderBottom: "1px solid #43424e" }}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
@@ -66,26 +90,93 @@ const MainNavbar: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-3">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                to={item.href}
-                className="px-4 py-2 text-sm font-medium transition-colors rounded-lg"
-                style={{
-                  color: "#af9151",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#d9ab3f";
-                  e.currentTarget.style.background = "rgba(217, 171, 63, 0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#af9151";
-                  e.currentTarget.style.background = "transparent";
-                }}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              if (item.children) {
+                return (
+                  <div
+                    key={item.label}
+                    className="relative"
+                    onMouseEnter={() => handleDesktopHover(item.label)}
+                    onMouseLeave={() => handleDesktopHover(null)}
+                  >
+                    <button
+                      className="flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-lg"
+                      style={{
+                        color:
+                          activeDropdown === item.label ? "#d9ab3f" : "#af9151",
+                        background:
+                          activeDropdown === item.label
+                            ? "rgba(217, 171, 63, 0.1)"
+                            : "transparent",
+                      }}
+                    >
+                      {item.label}
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          activeDropdown === item.label ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    <AnimatePresence>
+                      {activeDropdown === item.label && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute left-0 mt-1 w-56 py-2 rounded-lg shadow-lg"
+                          style={{
+                            background: "#23305d",
+                            border: "1px solid #43424e",
+                          }}
+                        >
+                          {item.children.map((child) => (
+                            <Link
+                              key={child.label}
+                              to={child.href}
+                              className="block px-4 py-2 text-sm transition-colors"
+                              style={{ color: "#af9151" }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = "#d9ab3f";
+                                e.currentTarget.style.background =
+                                  "rgba(217, 171, 63, 0.1)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = "#af9151";
+                                e.currentTarget.style.background =
+                                  "transparent";
+                              }}
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href!}
+                  className="px-4 py-2 text-sm font-medium transition-colors rounded-lg"
+                  style={{ color: "#af9151" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#d9ab3f";
+                    e.currentTarget.style.background =
+                      "rgba(217, 171, 63, 0.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "#af9151";
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* CTA Buttons - Desktop */}
@@ -142,28 +233,81 @@ const MainNavbar: React.FC = () => {
           >
             <div className="container mx-auto px-4 py-4">
               <nav className="flex flex-col gap-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    to={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className="px-4 py-3 text-sm font-medium transition-colors rounded-lg"
-                    style={{
-                      color: "#af9151",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = "#d9ab3f";
-                      e.currentTarget.style.background =
-                        "rgba(217, 171, 63, 0.1)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = "#af9151";
-                      e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {navItems.map((item) => {
+                  if (item.children) {
+                    const isOpenDropdown = openMobileDropdown === item.label;
+                    return (
+                      <div key={item.label}>
+                        <button
+                          onClick={() => toggleMobileDropdown(item.label)}
+                          className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium transition-colors rounded-lg"
+                          style={{ color: "#af9151" }}
+                        >
+                          {item.label}
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-200 ${
+                              isOpenDropdown ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                        <AnimatePresence>
+                          {isOpenDropdown && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="overflow-hidden pl-4"
+                            >
+                              {item.children.map((child) => (
+                                <Link
+                                  key={child.label}
+                                  to={child.href}
+                                  onClick={() => setIsOpen(false)}
+                                  className="block px-4 py-2 text-sm transition-colors rounded-lg"
+                                  style={{ color: "#af9151" }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = "#d9ab3f";
+                                    e.currentTarget.style.background =
+                                      "rgba(217, 171, 63, 0.1)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = "#af9151";
+                                    e.currentTarget.style.background =
+                                      "transparent";
+                                  }}
+                                >
+                                  {child.label}
+                                </Link>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.href!}
+                      onClick={() => setIsOpen(false)}
+                      className="px-4 py-3 text-sm font-medium transition-colors rounded-lg"
+                      style={{ color: "#af9151" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "#d9ab3f";
+                        e.currentTarget.style.background =
+                          "rgba(217, 171, 63, 0.1)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "#af9151";
+                        e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+
                 <div
                   className="flex flex-col gap-2 pt-4 mt-2"
                   style={{ borderTop: "1px solid #43424e" }}
