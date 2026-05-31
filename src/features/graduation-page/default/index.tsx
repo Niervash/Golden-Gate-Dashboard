@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ILoveGGS } from "../../../assets";
 import confetti from "canvas-confetti";
-import { ArrowBigLeft, X } from "lucide-react";
+import { ArrowBigLeft, X, Music, Pause } from "lucide-react";
 
 // Data siswa
 const dummyStudents = [
@@ -34,13 +34,16 @@ const GraduationPage: React.FC = () => {
     status?: string;
     averageScore?: number;
   } | null>(null);
-  const [glitchActive, setGlitchActive] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState<{
     name: string;
     score: number;
   } | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  // Music entrance state
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (
@@ -68,6 +71,39 @@ const GraduationPage: React.FC = () => {
     }
   }, [result]);
 
+  // Initialize audio and cleanup
+  useEffect(() => {
+    const audio = new Audio(
+      "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf6a9.mp3?filename=graduation-choir-122237.mp3",
+    );
+    audio.loop = true;
+    audio.volume = 0.3;
+    audio.preload = "auto";
+    audioRef.current = audio;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const toggleMusic = () => {
+    if (!audioRef.current) return;
+    if (isMusicPlaying) {
+      audioRef.current.pause();
+      setIsMusicPlaying(false);
+    } else {
+      audioRef.current.play().catch((err) => {
+        console.warn("Audio play failed:", err);
+        // Still set to false as it didn't play
+        setIsMusicPlaying(false);
+      });
+      setIsMusicPlaying(true);
+    }
+  };
+
   const handleCheck = () => {
     const student = dummyStudents.find((s) => s.nisn === nisn.trim());
     if (student) {
@@ -78,143 +114,205 @@ const GraduationPage: React.FC = () => {
         averageScore: student.averageScore,
       });
       if (student.status === "GRADUATED") {
+        // Elegant gold and white confetti
         confetti({
-          particleCount: 200,
+          particleCount: 180,
           spread: 100,
           origin: { y: 0.6 },
           startVelocity: 20,
-          colors: ["#fbbf24", "#34d399", "#60a5fa", "#f472b6"],
+          colors: ["#C5A059", "#D4AF37", "#F8F6F0", "#13294B"],
         });
         confetti({
-          particleCount: 100,
+          particleCount: 80,
           spread: 70,
           origin: { y: 0.7, x: 0.2 },
           startVelocity: 25,
+          colors: ["#C5A059", "#FFFFFF"],
         });
         confetti({
-          particleCount: 100,
+          particleCount: 80,
           spread: 70,
           origin: { y: 0.7, x: 0.8 },
           startVelocity: 25,
+          colors: ["#C5A059", "#FFFFFF"],
         });
       }
     } else {
       setResult({ found: false });
     }
-    setGlitchActive(true);
-    setTimeout(() => setGlitchActive(false), 500);
   };
 
   return (
     <>
       <style>{`
-        .bg-dark { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0a0c12 0%, #0f111a 100%); z-index: -3; }
-        .grid-clear { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(to right, rgba(0, 255, 255, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 255, 255, 0.15) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: -2; }
-        .noise-light { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.2'/%3E%3C/svg%3E"); background-repeat: repeat; pointer-events: none; z-index: -1; mix-blend-mode: overlay; }
-        .scanline-faint { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 4px); pointer-events: none; z-index: 1; }
-        @keyframes glitchSimple { 0% { text-shadow: -2px 0 #ff00c1, 2px 0 #00fff9; transform: skew(0deg); } 25% { text-shadow: -3px 0 #ff00c1, 3px 0 #00fff9; transform: skew(2deg); } 50% { text-shadow: -1px 0 #ff00c1, 1px 0 #00fff9; transform: skew(-1deg); } 75% { text-shadow: -2px 0 #ff00c1, 2px 0 #00fff9; transform: skew(1deg); } 100% { text-shadow: 0 0 0 transparent; transform: skew(0deg); } }
-        .glitch-text { animation: glitchSimple 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-        .glitch-hover:hover { animation: glitchSimple 0.25s steps(2) forwards; }
-        @keyframes borderGlitch { 0% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); } 50% { border-color: #ff00c1; box-shadow: 0 0 6px #ff00c1; } 100% { border-color: rgba(0, 255, 255, 0.6); box-shadow: 0 0 0 rgba(255,0,200,0); } }
-        .border-glitch { animation: borderGlitch 0.3s ease-out; }
-        /* Modal retro pixel */
-        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(3px); }
-        .modal-content {
-          background: linear-gradient(145deg, #1a1c2c, #0f0f1a);
-          border: 3px solid #fbbf24;
-          box-shadow: 0 0 0 2px #0f0f1a, 0 0 0 5px rgba(251,191,36,0.3), 0 10px 30px rgba(0,0,0,0.5);
-          image-rendering: crisp-edges;
+        /* Elegant GGS Theme - Official & Simple */
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        .font-serif-elegant {
+          font-family: 'Cormorant Garamond', serif;
         }
-        /* Teks check results lebih bagus */
-        .check-title {
-          font-family: "'Press Start 2P', monospace";
-          font-size: 1rem;
-          letter-spacing: 1px;
+        .font-sans-modern {
+          font-family: 'Inter', sans-serif;
         }
-        .check-sub {
-          font-family: "'Courier New', monospace";
-          font-size: 0.7rem;
-          opacity: 0.8;
+        
+        .bg-gradient-ceremony {
+          background: linear-gradient(145deg, #FEFCF5 0%, #F9F5EB 100%);
         }
-        @media (min-width: 640px) {
-          .check-title { font-size: 1.25rem; }
-          .check-sub { font-size: 0.8rem; }
+        
+        .gold-border-bottom {
+          border-bottom: 2px solid #C5A059;
+        }
+        
+        .gold-shadow {
+          box-shadow: 0 8px 20px -6px rgba(197, 160, 89, 0.2);
+        }
+        
+        .card-elegant {
+          background: rgba(255, 255, 255, 0.96);
+          backdrop-filter: blur(0px);
+          border: 1px solid rgba(197, 160, 89, 0.35);
+          transition: all 0.25s ease;
+        }
+        
+        .input-elegant {
+          background: #FFFFFF;
+          border: 1px solid #E2DCCD;
+          transition: all 0.2s;
+        }
+        
+        .input-elegant:focus {
+          border-color: #C5A059;
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.2);
+        }
+        
+        .btn-gold {
+          background: #C5A059;
+          color: #13294B;
+          font-weight: 600;
+          transition: all 0.2s;
+          border-bottom: 2px solid #9E793E;
+        }
+        
+        .btn-gold:hover {
+          background: #D4AF37;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(197, 160, 89, 0.3);
+        }
+        
+        .modal-gold {
+          background: #FFFFFF;
+          border-top: 6px solid #C5A059;
+          box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .music-btn {
+          background: rgba(255, 255, 255, 0.92);
+          backdrop-filter: blur(4px);
+          border: 1px solid #C5A059;
+          color: #13294B;
+          transition: all 0.2s;
+        }
+        
+        .music-btn:hover {
+          background: #C5A059;
+          color: white;
+          border-color: #C5A059;
+        }
+        
+        @keyframes softRise {
+          0% { opacity: 0; transform: translateY(15px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-soft-rise {
+          animation: softRise 0.5s ease-out forwards;
+        }
+        
+        .decor-line {
+          height: 2px;
+          background: linear-gradient(90deg, transparent, #C5A059, #D4AF37, #C5A059, transparent);
+          width: 100px;
+          margin: 0 auto;
         }
       `}</style>
 
-      <div className="min-h-screen text-white font-body relative">
+      <div className="min-h-screen bg-gradient-ceremony font-sans-modern text-gray-800 relative">
         {/* Tombol Kembali */}
         <button
           onClick={() => window.history.back()}
-          className="fixed top-4 left-4 z-50 px-3 py-2 text-[10px] sm:text-xs font-heading bg-black/70 text-yellow-400 border-2 border-yellow-400/70 rounded-sm hover:bg-yellow-400 hover:text-black transition-all glitch-hover"
-          style={{ fontFamily: "'Press Start 2P', monospace" }}
+          className="fixed top-5 left-5 z-50 flex items-center gap-1 px-4 py-2 text-xs font-medium bg-white/80 backdrop-blur-sm text-[#13294B] border border-[#C5A059]/50 rounded-full shadow-sm hover:bg-[#C5A059] hover:text-white hover:border-[#C5A059] transition-all"
         >
-          <ArrowBigLeft size={18} />
+          <ArrowBigLeft size={16} />
+          <span>Back</span>
         </button>
 
-        <div className="bg-dark" />
-        <div className="grid-clear" />
-        <div className="noise-light" />
-        <div className="scanline-faint" />
+        {/* Music Entrance Button */}
+        <button
+          onClick={toggleMusic}
+          className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-12 h-12 rounded-full music-btn shadow-md"
+          aria-label="Entrance Music"
+        >
+          {isMusicPlaying ? <Pause size={22} /> : <Music size={22} />}
+        </button>
 
         {/* HERO SECTION */}
-        <section className="relative flex flex-col items-center justify-center px-4 pt-12 pb-8 min-h-[70vh]">
+        <section className="relative flex flex-col items-center justify-center px-4 pt-16 pb-12 min-h-[75vh] text-center">
           <motion.div
-            initial={{ y: -10, opacity: 0 }}
+            initial={{ y: -8, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="w-24 md:w-32 h-auto mb-4"
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-28 md:w-36 h-auto mb-5"
           >
-            <img src={ILoveGGS} alt="Logo" className="w-full object-contain" />
+            <img
+              src={ILoveGGS}
+              alt="GGS Logo"
+              className="w-full object-contain drop-shadow-sm"
+            />
           </motion.div>
+
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
+            initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 100 }}
-            className="text-center mb-5"
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-center"
           >
-            <h1
-              className={`text-xl sm:text-2xl md:text-3xl font-heading leading-tight ${glitchActive ? "glitch-text" : "glitch-hover"}`}
-              style={{
-                fontFamily: "'Press Start 2P', monospace",
-                color: "#fbbf24",
-              }}
-            >
-              GRADUATION
+            <h1 className="font-serif-elegant text-3xl sm:text-4xl md:text-5xl font-bold text-[#13294B] tracking-wide leading-tight">
+              Graduation
               <br />
-              ANNOUNCEMENT
-              <br />
-              2026
+              <span className="text-[#C5A059]">Announcement 2026</span>
             </h1>
-            <h2 className="text-base sm:text-lg md:text-xl font-heading mt-2 text-white/90">
+            <div className="decor-line my-4"></div>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-[#2C3E55] mt-2">
               GGS International School
             </h2>
-            <p className="text-xs sm:text-sm mt-2 text-cyan-300/80 max-w-md">
-              "Celebrating Achievement, Excellence, and New Beginnings"
+            <p className="text-sm sm:text-base text-gray-500 mt-3 max-w-md mx-auto italic">
+              "Honoring Excellence, Embracing the Future"
             </p>
           </motion.div>
+
           <motion.div
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="w-full max-w-lg bg-black/50 backdrop-blur-sm p-5 rounded-md border-l-4 border-yellow-400 mb-6"
+            transition={{ delay: 0.25, duration: 0.5 }}
+            className="w-full max-w-2xl mx-auto mt-8"
           >
-            <p className="text-sm md:text-base leading-relaxed text-white/90">
-              <span className="text-yellow-400 font-bold text-base md:text-lg">
-                Dear Students & Families,
-              </span>
-              <br />
-              With great pride, we congratulate the Class of 2026. Your
-              dedication and resilience have brought you to this milestone. May
-              you continue to shine and lead with integrity.
-            </p>
-            <p
-              className="mt-3 text-yellow-400 text-xs md:text-sm font-heading text-right"
-              style={{ fontFamily: "'Press Start 2P', monospace" }}
-            >
-              — PRINCIPAL
-            </p>
+            <div className="bg-white/90 card-elegant rounded-xl p-6 md:p-7 gold-shadow">
+              <p className="text-base md:text-lg leading-relaxed text-gray-700">
+                <span className="font-serif-elegant text-xl font-semibold text-[#C5A059] block mb-2">
+                  Dear Students & Families,
+                </span>
+                With immense pride and joy, we celebrate the graduation of the
+                Class of 2026. Your perseverance, curiosity, and integrity have
+                led you to this historic milestone. May you continue to
+                illuminate the world with knowledge and compassion.
+              </p>
+              <p className="mt-5 text-[#13294B] font-serif-elegant font-semibold text-right text-sm tracking-wide">
+                — Dr. Helena Morrison, Principal
+              </p>
+            </div>
           </motion.div>
+
           <motion.button
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -224,48 +322,51 @@ const GraduationPage: React.FC = () => {
                 .getElementById("check-section")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="px-6 py-2 text-xs sm:text-sm font-heading bg-yellow-500 text-black rounded-sm border-b-2 border-yellow-700 hover:border-b-0 hover:translate-y-0.5 transition-all glitch-hover"
-            style={{ fontFamily: "'Press Start 2P', monospace" }}
+            className="mt-10 px-7 py-3 text-sm font-semibold rounded-full btn-gold shadow-md"
           >
-            LOGIN TO VIEW RESULTS
+            VIEW YOUR GRADUATION STATUS
           </motion.button>
         </section>
 
         {/* CHECK RESULTS SECTION */}
         <section
           id="check-section"
-          className="relative py-12 px-4 flex flex-col items-center"
+          className="relative py-16 px-4 flex flex-col items-center bg-white/40"
         >
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-6"
+            transition={{ duration: 0.4 }}
+            className="text-center mb-7"
           >
-            <h2 className="check-title text-yellow-400 mb-1">CHECK RESULTS</h2>
-            <p className="check-sub text-cyan-300/80">
-              Enter your NISN to view graduation status
+            <h2 className="font-serif-elegant text-3xl md:text-4xl font-semibold text-[#13294B]">
+              Check Your Result
+            </h2>
+            <div className="w-16 h-0.5 bg-[#C5A059] mx-auto mt-3 mb-3"></div>
+            <p className="text-gray-600 text-sm max-w-md">
+              Please enter your 10-digit NISN to verify graduation status
             </p>
           </motion.div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm mb-8">
+
+          <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mb-10">
             <input
               type="text"
               inputMode="numeric"
-              placeholder="NISN (10 digits)"
+              placeholder="NISN (e.g., 0101609144)"
               value={nisn}
               onChange={(e) => {
                 setResult(null);
                 setNisn(e.target.value.replace(/\D/g, "").slice(0, 10));
               }}
-              className="flex-1 px-4 py-2 bg-black/60 border border-yellow-400/50 text-white placeholder-white/40 font-mono text-sm rounded-sm focus:outline-none focus:border-yellow-400 transition"
+              className="flex-1 px-5 py-3 rounded-full input-elegant font-mono text-sm shadow-sm"
             />
             <button
               onClick={handleCheck}
               disabled={!nisn}
-              className="px-5 py-2 bg-yellow-500 text-black font-heading text-xs sm:text-sm rounded-sm border-b-2 border-yellow-700 hover:border-b-0 hover:translate-y-0.5 disabled:opacity-40 transition-all glitch-hover"
-              style={{ fontFamily: "'Press Start 2P', monospace" }}
+              className="px-6 py-3 rounded-full btn-gold text-sm font-semibold disabled:opacity-40 disabled:pointer-events-none shadow-sm"
             >
-              CHECK
+              VERIFY NISN
             </button>
           </div>
 
@@ -273,61 +374,64 @@ const GraduationPage: React.FC = () => {
             {result && (
               <motion.div
                 ref={resultRef}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`w-full max-w-sm ${glitchActive ? "border-glitch" : ""}`}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3 }}
+                className="w-full max-w-md"
               >
                 {result.found ? (
-                  <div className="bg-black/70 backdrop-blur-sm p-5 rounded-md border border-yellow-400/40 shadow-lg">
-                    <h3
-                      className="text-sm font-heading text-yellow-400 text-center mb-3"
-                      style={{ fontFamily: "'Press Start 2P', monospace" }}
-                    >
-                      GRADUATION CARD
+                  <div className="card-elegant bg-white rounded-2xl p-6 gold-shadow">
+                    <h3 className="font-serif-elegant text-xl font-bold text-[#C5A059] text-center border-b border-[#C5A059]/30 pb-2 mb-4">
+                      Graduation Credential
                     </h3>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <span className="text-cyan-300">NAME:</span>{" "}
-                        <span className="font-semibold">{result.name}</span>
-                      </p>
-                      <p>
-                        <span className="text-cyan-300">NISN:</span>{" "}
-                        <span className="font-mono">{nisn}</span>
-                      </p>
-                      <p className="mt-2">
-                        STATUS:{" "}
+                    <div className="space-y-3 text-gray-800">
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="font-semibold text-gray-600">
+                          NAME
+                        </span>
+                        <span className="font-medium text-right">
+                          {result.name}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <span className="font-semibold text-gray-600">
+                          NISN
+                        </span>
+                        <span className="font-mono text-sm">{nisn}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-1">
+                        <span className="font-semibold text-gray-600">
+                          STATUS
+                        </span>
                         <span
-                          className={`font-heading text-sm ${result.status === "GRADUATED" ? "text-green-400" : "text-red-400"} ${glitchActive ? "glitch-text" : ""}`}
+                          className={`font-bold ${result.status === "GRADUATED" ? "text-green-700" : "text-red-600"}`}
                         >
                           {result.status === "GRADUATED"
-                            ? "GRADUATED"
+                            ? "GRADUATED ✓"
                             : "NOT GRADUATED"}
                         </span>
-                      </p>
+                      </div>
                       {result.status === "GRADUATED" &&
                         result.averageScore !== undefined && (
-                          <p className="text-sm">
-                            <span className="text-cyan-300">
-                              AVERAGE SCORE:
-                            </span>{" "}
-                            <span className="font-mono text-yellow-300">
+                          <div className="flex justify-between items-center bg-[#F9F5EB] p-3 rounded-lg mt-2">
+                            <span className="font-semibold text-gray-700">
+                              FINAL AVERAGE
+                            </span>
+                            <span className="font-mono text-lg font-bold text-[#C5A059]">
                               {result.averageScore.toFixed(1)}
                             </span>
-                          </p>
+                          </div>
                         )}
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-black/70 backdrop-blur-sm p-5 rounded-md border border-red-400/40 text-center">
-                    <p
-                      className="text-red-400 text-sm font-heading"
-                      style={{ fontFamily: "'Press Start 2P', monospace" }}
-                    >
-                      NISN NOT FOUND
+                  <div className="bg-white rounded-2xl p-6 text-center border border-red-200 shadow-sm">
+                    <p className="text-red-600 font-semibold text-lg">
+                      NISN Not Found
                     </p>
-                    <p className="text-white/60 text-xs mt-1">
-                      Please check your input and try again.
+                    <p className="text-gray-500 text-sm mt-1">
+                      Please verify your number and try again.
                     </p>
                   </div>
                 )}
@@ -336,72 +440,70 @@ const GraduationPage: React.FC = () => {
           </AnimatePresence>
         </section>
 
-        <footer className="py-5 text-center border-t border-yellow-400/20">
-          <p className="text-[10px] text-cyan-300/50 font-mono">
-            © 2026 GGS International School
+        <footer className="py-6 text-center border-t border-[#C5A059]/20 bg-white/50">
+          <p className="text-xs text-gray-500 font-mono tracking-wide">
+            © 2026 GGS International School — All Rights Reserved
           </p>
         </footer>
       </div>
 
-      {/* MODAL CONGRATULATIONS - Clean, Responsif, Pixel Theme */}
+      {/* MODAL CONGRATULATIONS - Elegant & Official */}
       <AnimatePresence>
         {showModal && modalData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-overlay"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 30 }}
-              transition={{ type: "spring", damping: 25, stiffness: 400 }}
-              className="modal-content relative max-w-md w-full rounded-sm p-6 text-center"
+              exit={{ scale: 0.94, opacity: 0, y: 15 }}
+              transition={{ type: "spring", damping: 28, stiffness: 400 }}
+              className="modal-gold relative max-w-md w-full rounded-2xl p-7 text-center"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setShowModal(false)}
-                className="absolute top-3 right-3 text-white/60 hover:text-yellow-400 transition-colors"
+                className="absolute top-4 right-4 text-gray-400 hover:text-[#C5A059] transition"
               >
                 <X size={22} />
               </button>
-              <div className="mb-3 text-5xl sm:text-6xl">🎓✨</div>
-              <h2
-                className="text-xl sm:text-2xl font-heading text-yellow-400 mb-2"
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
-              >
-                CONGRATULATIONS!
+              <div className="mb-3 text-6xl">🎓✨</div>
+              <h2 className="font-serif-elegant text-2xl md:text-3xl font-bold text-[#13294B]">
+                Congratulations!
               </h2>
-              <p className="text-white text-sm sm:text-base mt-2">
-                You have successfully graduated from
+              <p className="text-gray-700 text-sm mt-2">
+                You have officially graduated from
               </p>
-              <p className="text-cyan-300 font-bold text-lg sm:text-xl mt-1">
+              <p className="text-[#C5A059] font-serif-elegant text-xl font-semibold mt-1">
                 GGS International School
               </p>
-              <div className="my-4 h-px bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
-              <p className="text-sm sm:text-base">
-                <span className="text-cyan-300">Name:</span>{" "}
-                <span className="font-semibold text-white">
-                  {modalData.name}
-                </span>
-              </p>
-              <p className="text-sm sm:text-base mt-1">
-                <span className="text-cyan-300">Final Average Score:</span>{" "}
-                <span className="text-yellow-300 font-mono font-bold">
-                  {modalData.score.toFixed(1)}
-                </span>
-              </p>
+              <div className="my-4 w-20 h-px bg-gradient-to-r from-transparent via-[#C5A059] to-transparent mx-auto"></div>
+              <div className="space-y-1 text-gray-800">
+                <p className="text-base">
+                  <span className="font-semibold text-gray-600">Name:</span>{" "}
+                  <span className="font-medium">{modalData.name}</span>
+                </p>
+                <p className="text-base">
+                  <span className="font-semibold text-gray-600">
+                    Average Score:
+                  </span>{" "}
+                  <span className="font-mono font-bold text-[#C5A059] text-lg">
+                    {modalData.score.toFixed(1)}
+                  </span>
+                </p>
+              </div>
               {modalData.score >= 85 && (
-                <p className="mt-2 text-yellow-300 text-xs sm:text-sm">
-                  🌟 Excellent Performance! 🌟
+                <p className="mt-3 text-[#C5A059] text-sm font-medium">
+                  ⭐ Distinction Honors ⭐
                 </p>
               )}
               <button
                 onClick={() => setShowModal(false)}
-                className="mt-6 px-5 py-2 bg-yellow-500 text-black font-heading text-xs sm:text-sm rounded-sm border-b-2 border-yellow-700 hover:border-b-0 hover:translate-y-0.5 transition-all glitch-hover"
-                style={{ fontFamily: "'Press Start 2P', monospace" }}
+                className="mt-6 px-6 py-2 rounded-full btn-gold text-sm font-semibold"
               >
                 CLOSE
               </button>
