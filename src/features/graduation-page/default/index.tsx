@@ -97,7 +97,6 @@ const GraduationPage: React.FC = () => {
     } else {
       audioRef.current.play().catch((err) => {
         console.warn("Audio play failed:", err);
-        // Still set to false as it didn't play
         setIsMusicPlaying(false);
       });
       setIsMusicPlaying(true);
@@ -114,13 +113,13 @@ const GraduationPage: React.FC = () => {
         averageScore: student.averageScore,
       });
       if (student.status === "GRADUATED") {
-        // Elegant gold and white confetti
+        // Elegant gold and navy confetti
         confetti({
           particleCount: 180,
           spread: 100,
           origin: { y: 0.6 },
           startVelocity: 20,
-          colors: ["#C5A059", "#D4AF37", "#F8F6F0", "#13294B"],
+          colors: ["#C5A059", "#D4AF37", "#F8F6F0", "#23305d"],
         });
         confetti({
           particleCount: 80,
@@ -145,7 +144,7 @@ const GraduationPage: React.FC = () => {
   return (
     <>
       <style>{`
-        /* Elegant GGS Theme - Official & Simple */
+        /* Elegant GGS Theme - Official Colors: #23305d (Navy) & #C5A059 (Gold) */
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
         
         .font-serif-elegant {
@@ -156,7 +155,7 @@ const GraduationPage: React.FC = () => {
         }
         
         .bg-gradient-ceremony {
-          background: linear-gradient(145deg, #FEFCF5 0%, #F9F5EB 100%);
+          background: linear-gradient(145deg, #FEFCF5 0%, #F7F4EC 100%);
         }
         
         .gold-border-bottom {
@@ -188,7 +187,7 @@ const GraduationPage: React.FC = () => {
         
         .btn-gold {
           background: #C5A059;
-          color: #13294B;
+          color: #23305d;
           font-weight: 600;
           transition: all 0.2s;
           border-bottom: 2px solid #9E793E;
@@ -210,7 +209,7 @@ const GraduationPage: React.FC = () => {
           background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(4px);
           border: 1px solid #C5A059;
-          color: #13294B;
+          color: #23305d;
           transition: all 0.2s;
         }
         
@@ -235,13 +234,23 @@ const GraduationPage: React.FC = () => {
           width: 100px;
           margin: 0 auto;
         }
+        
+        .text-navy {
+          color: #23305d;
+        }
+        .bg-navy {
+          background-color: #23305d;
+        }
+        .border-navy {
+          border-color: #23305d;
+        }
       `}</style>
 
       <div className="min-h-screen bg-gradient-ceremony font-sans-modern text-gray-800 relative">
         {/* Tombol Kembali */}
         <button
           onClick={() => window.history.back()}
-          className="fixed top-5 left-5 z-50 flex items-center gap-1 px-4 py-2 text-xs font-medium bg-white/80 backdrop-blur-sm text-[#13294B] border border-[#C5A059]/50 rounded-full shadow-sm hover:bg-[#C5A059] hover:text-white hover:border-[#C5A059] transition-all"
+          className="fixed top-5 left-5 z-50 flex items-center gap-1 px-4 py-2 text-xs font-medium bg-white/80 backdrop-blur-sm text-[#23305d] border border-[#C5A059]/50 rounded-full shadow-sm hover:bg-[#C5A059] hover:text-white hover:border-[#C5A059] transition-all"
         >
           <ArrowBigLeft size={16} />
           <span>Back</span>
@@ -277,13 +286,13 @@ const GraduationPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-center"
           >
-            <h1 className="font-serif-elegant text-3xl sm:text-4xl md:text-5xl font-bold text-[#13294B] tracking-wide leading-tight">
-              Graduation
+            <h1 className="font-serif-elegant text-3xl sm:text-4xl md:text-5xl font-bold tracking-wide leading-tight">
+              <span className="text-[#23305d]">Graduation</span>
               <br />
               <span className="text-[#C5A059]">Announcement 2026</span>
             </h1>
             <div className="decor-line my-4"></div>
-            <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-[#2C3E55] mt-2">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-[#23305d] mt-2">
               GGS International School
             </h2>
             <p className="text-sm sm:text-base text-gray-500 mt-3 max-w-md mx-auto italic">
@@ -307,7 +316,7 @@ const GraduationPage: React.FC = () => {
                 led you to this historic milestone. May you continue to
                 illuminate the world with knowledge and compassion.
               </p>
-              <p className="mt-5 text-[#13294B] font-serif-elegant font-semibold text-right text-sm tracking-wide">
+              <p className="mt-5 text-[#23305d] font-serif-elegant font-semibold text-right text-sm tracking-wide">
                 — Dr. Helena Morrison, Principal
               </p>
             </div>
@@ -340,7 +349,7 @@ const GraduationPage: React.FC = () => {
             transition={{ duration: 0.4 }}
             className="text-center mb-7"
           >
-            <h2 className="font-serif-elegant text-3xl md:text-4xl font-semibold text-[#13294B]">
+            <h2 className="font-serif-elegant text-3xl md:text-4xl font-semibold text-[#23305d]">
               Check Your Result
             </h2>
             <div className="w-16 h-0.5 bg-[#C5A059] mx-auto mt-3 mb-3"></div>
@@ -447,14 +456,14 @@ const GraduationPage: React.FC = () => {
         </footer>
       </div>
 
-      {/* MODAL CONGRATULATIONS - Elegant & Official */}
+      {/* MODAL CONGRATULATIONS - Elegant & Official with Navy */}
       <AnimatePresence>
         {showModal && modalData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#23305d]/60 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           >
             <motion.div
@@ -472,7 +481,7 @@ const GraduationPage: React.FC = () => {
                 <X size={22} />
               </button>
               <div className="mb-3 text-6xl">🎓✨</div>
-              <h2 className="font-serif-elegant text-2xl md:text-3xl font-bold text-[#13294B]">
+              <h2 className="font-serif-elegant text-2xl md:text-3xl font-bold text-[#23305d]">
                 Congratulations!
               </h2>
               <p className="text-gray-700 text-sm mt-2">
