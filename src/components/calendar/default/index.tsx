@@ -15,70 +15,23 @@ interface Event {
   isoDate: string; // format "YYYY-MM-DD"
   time: string;
   location: string;
+  route: string;
   category: "Akademik" | "Kegiatan" | "Prestasi" | "PPDB" | "Libur";
   description: string;
 }
 
+// Hanya menyisakan event Graduation
 const events: Event[] = [
   {
     id: 1,
-    title: "Pendaftaran PPDB Gelombang 1 Dibuka",
+    route: "graduation",
+    title: "🎓 Graduation Ceremony & Announcement 2026",
     isoDate: "2026-06-02",
-    time: "08:00 - 15:00 WIB",
-    location: "Online & Kampus GGS",
-    category: "PPDB",
-    description:
-      "Penerimaan Peserta Didik Baru tahun ajaran 2026/2027 resmi dibuka. Daftarkan putra-putri Anda segera.",
-  },
-  {
-    id: 2,
-    title: "Pekan Olahraga dan Seni (PORSENI) 2026",
-    isoDate: "2026-06-15",
-    time: "07:30 - 16:00 WIB",
-    location: "Lapangan Utama GGS",
-    category: "Kegiatan",
-    description:
-      "Seluruh siswa akan berpartisipasi dalam berbagai lomba olahraga dan seni untuk mengakhiri semester.",
-  },
-  {
-    id: 3,
-    title: "Webinar Kurikulum Merdeka untuk Orang Tua",
-    isoDate: "2026-06-20",
-    time: "09:00 - 11:30 WIB",
-    location: "Ruang Multimedia Lt. 3",
+    time: "09:00 - 12:00 WIB",
+    location: "Aula Utama GGS",
     category: "Akademik",
     description:
-      "Sosialisasi implementasi Kurikulum Merdeka di GGS beserta sesi tanya jawab dengan wali kelas.",
-  },
-  {
-    id: 4,
-    title: "Pengumuman Kelulusan & Kenaikan Kelas",
-    isoDate: "2026-06-25",
-    time: "10:00 WIB",
-    location: "Website Resmi GGS",
-    category: "Akademik",
-    description:
-      "Hasil kelulusan dan kenaikan kelas dapat diakses melalui portal akademik masing-masing siswa.",
-  },
-  {
-    id: 5,
-    title: "Libur Semester Genap",
-    isoDate: "2026-06-29",
-    time: "Sepanjang Hari",
-    location: "-",
-    category: "Libur",
-    description:
-      "Masa liburan semester genap dimulai hingga 12 Juli 2026. Kegiatan belajar mengajar kembali 13 Juli 2026.",
-  },
-  {
-    id: 6,
-    title: "Pameran Karya Seni Siswa",
-    isoDate: "2026-06-08",
-    time: "09:00 - 14:00 WIB",
-    location: "Aula Utama",
-    category: "Kegiatan",
-    description:
-      "Pameran seni lukis, musik, dan drama hasil pembelajaran siswa selama semester genap.",
+      "Upacara wisuda dan pengumuman kelulusan untuk siswa Kelas 12. Acara akan dihadiri oleh Kepala Sekolah, para guru, dan orang tua. Ijazah resmi akan dibagikan. Kami merayakan pencapaian dan awal baru bagi para lulusan.",
   },
 ];
 
@@ -193,9 +146,9 @@ const CalendarEvent: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Layout dua kolom dengan proporsi kalender lebih kecil */}
+        {/* Layout dua kolom */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Kolom Kiri: Kalender (5/12) */}
+          {/* Kolom Kiri: Kalender */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -310,7 +263,7 @@ const CalendarEvent: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Kolom Kanan: Detail Event (7/12 atau 8/12) */}
+          {/* Kolom Kanan: Detail Event */}
           <div className="lg:col-span-7 xl:col-span-8">
             <AnimatePresence mode="wait">
               {selectedDate && selectedEvents.length > 0 ? (
@@ -398,7 +351,7 @@ const CalendarEvent: React.FC = () => {
                           {event.description}
                         </p>
                         <Link
-                          to={`/event/${event.id}`}
+                          to={`/${event.route}`}
                           className="inline-flex items-center mt-4 text-sm font-semibold transition-colors"
                           style={{ color: "#d9ab3f" }}
                           onMouseEnter={(e) =>

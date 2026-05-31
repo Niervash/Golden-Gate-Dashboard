@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ILoveGGS } from "../../../assets";
-// Sesuaikan import logo dengan path dan jenis export yang benar
-// Jika default export: import ILoveGGS from "../../../assets/images";
-// Jika named export: import { ILoveGGS } from "../../../assets/images";
-// Untuk sementara gunakan placeholder
+import confetti from "canvas-confetti"; // [CONFETTI] import library
 
 const dummyStudents = [
   { nisn: "1234567890", name: "Alya Khansa", status: "GRADUATED" },
@@ -26,6 +23,31 @@ const GraduationPage: React.FC = () => {
     const student = dummyStudents.find((s) => s.nisn === nisn.trim());
     if (student) {
       setResult({ found: true, name: student.name, status: student.status });
+      // [CONFETTI] Jika lulus, ledakkan confetti
+      if (student.status === "GRADUATED") {
+        // Konfetti utama dari tengah
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 },
+          startVelocity: 20,
+          colors: ["#fbbf24", "#34d399", "#60a5fa", "#f472b6"],
+        });
+        // Konfetti tambahan dari kiri
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.7, x: 0.2 },
+          startVelocity: 25,
+        });
+        // Konfetti tambahan dari kanan
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.7, x: 0.8 },
+          startVelocity: 25,
+        });
+      }
     } else {
       setResult({ found: false });
     }
