@@ -27,7 +27,7 @@ const events: Event[] = [
     route: "graduation",
     title: "🎓  Graduation Announcement 2026",
     isoDate: "2026-06-02",
-    time: "05:00  WIT",
+    time: "05:00  WITA",
     location: "ONLINE",
     category: "Akademik",
     description:
