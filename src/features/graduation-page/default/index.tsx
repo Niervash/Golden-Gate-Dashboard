@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ILoveGGS, ILovemyMusic } from "../../../assets";
 import confetti from "canvas-confetti";
 import { ArrowBigLeft, X, Music, Pause, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Data siswa
 const dummyStudents = [
@@ -28,6 +29,7 @@ const dummyStudents = [
 
 const GraduationPage: React.FC = () => {
   const [nisn, setNisn] = useState("");
+  const navigate = useNavigate();
   const [result, setResult] = useState<{
     found: boolean;
     name?: string;
@@ -295,7 +297,7 @@ const GraduationPage: React.FC = () => {
       <div className="min-h-screen bg-gradient-ceremony font-sans-modern text-gray-800 relative">
         {/* Tombol Kembali */}
         <button
-          onClick={() => window.history.back()}
+          onClick={() => navigate("/home")}
           className="fixed top-4 left-4 z-50 flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-white/80 backdrop-blur-sm text-[#23305d] border border-[#C5A059]/50 rounded-full shadow-sm hover:bg-[#C5A059] hover:text-white hover:border-[#C5A059] transition-all sm:top-5 sm:left-5 sm:px-4 sm:py-2"
         >
           <ArrowBigLeft size={14} className="sm:w-4 sm:h-4" />
