@@ -50,7 +50,7 @@ const GraduationPage: React.FC = () => {
   // Countdown state
   const [countdownFinished, setCountdownFinished] = useState(false);
   const [countdownText, setCountdownText] = useState("");
-  const targetDate = new Date(Date.UTC(2026, 5, 2, 9, 0, 0)); // 2 Juni 2026 jam 08:00 UTC = 17:00 WITA (UTC+8)
+  const targetDate = new Date(Date.UTC(2026, 5, 2, 8, 0, 0)); // 2 Juni 2026 jam 08:00 UTC = 17:00 WITA (UTC+8)
 
   useEffect(() => {
     if (
