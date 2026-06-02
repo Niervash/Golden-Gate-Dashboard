@@ -418,7 +418,7 @@ const GraduationPage: React.FC = () => {
                 {countdownText}
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                June 2, 2026 — 5:00 PM WITA
+                June 2, 2026 — 4:00 PM WITA
               </p>
             </div>
           )}
