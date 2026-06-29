@@ -18,7 +18,7 @@ const AdminLayout: React.FC<props> = ({ children }) => {
           style={{ margin: "16px 0" }}
           items={[{ title: "Home" }, { title: "List" }, { title: "App" }]}
         />
-        <Card> {children}</Card>
+        {children}
       </Content>
       <AdminFooter />
     </Layout>
