@@ -20,10 +20,10 @@ import {
   AlertTriangle,
   List,
   Sparkles,
-  Printer,
-  Download,
   Clock,
-  ChevronRight,
+  Package,
+  AlertCircle,
+  FileText,
 } from "lucide-react";
 import { AdminLayout } from "../../../layouts";
 
@@ -33,6 +33,9 @@ interface HistoryItem {
   name: string;
   category: string;
   location: string;
+  quantity: number;
+  status: string;
+  notes: string;
   timestamp: string;
 }
 
@@ -50,6 +53,9 @@ const InventarisCode: React.FC = () => {
   const [itemCategory, setItemCategory] = useState<string>("LNY");
   const [itemLocation, setItemLocation] = useState<string>("");
   const [itemPrefix, setItemPrefix] = useState<string>("SCIENC");
+  const [quantity, setQuantity] = useState<number>(1);
+  const [status, setStatus] = useState<string>("Tersedia");
+  const [notes, setNotes] = useState<string>("");
   const [generatedCode, setGeneratedCode] = useState<string>("—");
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [toast, setToast] = useState<ToastState>({
@@ -183,12 +189,18 @@ const InventarisCode: React.FC = () => {
     name: string,
     category: string,
     location: string,
+    quantity: number,
+    status: string,
+    notes: string,
   ) => {
     const newEntry: HistoryItem = {
       code,
       name: name.trim() || "Tanpa nama",
       category,
       location: location.trim() || "-",
+      quantity: quantity || 1,
+      status: status || "Tersedia",
+      notes: notes.trim() || "-",
       timestamp: new Date().toISOString(),
     };
     setHistory((prev) => [...prev, newEntry]);
@@ -221,6 +233,9 @@ const InventarisCode: React.FC = () => {
       "Nama Item": item.name,
       Kategori: item.category,
       Lokasi: item.location,
+      Jumlah: item.quantity,
+      Status: item.status,
+      Keterangan: item.notes,
       Waktu: new Date(item.timestamp).toLocaleString("id-ID"),
     }));
     try {
@@ -252,9 +267,22 @@ const InventarisCode: React.FC = () => {
       return;
     }
     const code = updateGeneratedCode();
-    addToHistory(code, itemName, itemCategory, itemLocation);
+    addToHistory(
+      code,
+      itemName,
+      itemCategory,
+      itemLocation,
+      quantity,
+      status,
+      notes,
+    );
     showToast(`Kode ${code} berhasil disimpan!`, "check-circle", "success");
+    // Reset form (kecuali prefix dan kategori)
     setItemName("");
+    setItemLocation("");
+    setQuantity(1);
+    setStatus("Tersedia");
+    setNotes("");
     setTimeout(() => {
       document.getElementById("itemNameInput")?.focus();
     }, 100);
@@ -266,6 +294,9 @@ const InventarisCode: React.FC = () => {
     setItemLocation("");
     setItemPrefix("SCIENC");
     setItemCategory("LNY");
+    setQuantity(1);
+    setStatus("Tersedia");
+    setNotes("");
     showToast("Form berhasil direset", "undo", "info");
   };
 
@@ -292,7 +323,7 @@ const InventarisCode: React.FC = () => {
     if (history.length === 0) {
       return (
         <tr key="empty">
-          <td colSpan={4} className="text-center text-gray-400 italic py-10">
+          <td colSpan={8} className="text-center text-gray-400 italic py-10">
             <div className="flex flex-col items-center gap-2">
               <QrCode size={32} className="text-gray-300" />
               <span>Belum ada kode yang dibuat</span>
@@ -328,11 +359,20 @@ const InventarisCode: React.FC = () => {
       LNY: "bg-gray-100 text-gray-700",
     };
 
+    const statusColors: Record<string, string> = {
+      Tersedia: "bg-emerald-100 text-emerald-700",
+      Dipinjam: "bg-amber-100 text-amber-700",
+      Rusak: "bg-red-100 text-red-700",
+      Dihapus: "bg-gray-100 text-gray-500",
+    };
+
     const sorted = [...history].reverse();
     return sorted.map((item) => {
       const catLabel = categoryLabels[item.category] || item.category;
       const catColor =
         categoryColors[item.category] || "bg-gray-100 text-gray-700";
+      const statusColor =
+        statusColors[item.status] || "bg-gray-100 text-gray-700";
       return (
         <tr
           key={item.code}
@@ -348,6 +388,20 @@ const InventarisCode: React.FC = () => {
             >
               {catLabel}
             </span>
+          </td>
+          <td className="py-3 px-4 text-gray-600 text-sm">{item.location}</td>
+          <td className="py-3 px-4 text-center font-semibold text-gray-700">
+            {item.quantity}
+          </td>
+          <td className="py-3 px-4">
+            <span
+              className={`inline-block text-xs font-medium px-3 py-1 rounded-full ${statusColor}`}
+            >
+              {item.status}
+            </span>
+          </td>
+          <td className="py-3 px-4 text-gray-500 text-sm max-w-xs truncate">
+            {item.notes}
           </td>
           <td className="py-3 px-4">
             <button
@@ -374,7 +428,7 @@ const InventarisCode: React.FC = () => {
   return (
     <AdminLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-start justify-center p-4 sm:p-6 lg:p-8">
-        <div className="w-full max-w-5xl">
+        <div className="w-full max-w-6xl">
           {/* Toast Notification */}
           {toast.show && (
             <div
@@ -527,6 +581,81 @@ const InventarisCode: React.FC = () => {
                       className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base uppercase font-mono placeholder:font-sans placeholder:uppercase placeholder:text-gray-400"
                     />
                   </div>
+
+                  {/* Jumlah */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="quantity"
+                      className="block text-sm font-semibold text-gray-700"
+                    >
+                      <Package
+                        size={16}
+                        className="inline text-blue-600 mr-2"
+                      />
+                      Jumlah
+                    </label>
+                    <input
+                      type="number"
+                      id="quantity"
+                      min="1"
+                      value={quantity}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                      }
+                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base"
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="status"
+                      className="block text-sm font-semibold text-gray-700"
+                    >
+                      <AlertCircle
+                        size={16}
+                        className="inline text-blue-600 mr-2"
+                      />
+                      Status
+                    </label>
+                    <select
+                      id="status"
+                      value={status}
+                      onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                        setStatus(e.target.value)
+                      }
+                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base appearance-none cursor-pointer"
+                    >
+                      <option value="Tersedia">✅ Tersedia</option>
+                      <option value="Dipinjam">📤 Dipinjam</option>
+                      <option value="Rusak">⚠️ Rusak</option>
+                      <option value="Dihapus">🗑️ Dihapus</option>
+                    </select>
+                  </div>
+
+                  {/* Keterangan - full width */}
+                  <div className="col-span-1 md:col-span-2 space-y-1.5">
+                    <label
+                      htmlFor="notes"
+                      className="block text-sm font-semibold text-gray-700"
+                    >
+                      <FileText
+                        size={16}
+                        className="inline text-blue-600 mr-2"
+                      />
+                      Keterangan
+                    </label>
+                    <textarea
+                      id="notes"
+                      rows={2}
+                      placeholder="Catatan tambahan (opsional)"
+                      value={notes}
+                      onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                        setNotes(e.target.value)
+                      }
+                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base placeholder:text-gray-400 resize-y min-h-[60px]"
+                    />
+                  </div>
                 </div>
 
                 {/* Code Display */}
@@ -629,7 +758,7 @@ const InventarisCode: React.FC = () => {
                 </div>
 
                 <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                  <div className="max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-sm">
                         <tr>
@@ -641,6 +770,18 @@ const InventarisCode: React.FC = () => {
                           </th>
                           <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
                             Kategori
+                          </th>
+                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                            Lokasi
+                          </th>
+                          <th className="py-3.5 px-4 text-center font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                            Jml
+                          </th>
+                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                            Status
+                          </th>
+                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                            Keterangan
                           </th>
                           <th className="py-3.5 px-4 border-b border-gray-200 w-12"></th>
                         </tr>
