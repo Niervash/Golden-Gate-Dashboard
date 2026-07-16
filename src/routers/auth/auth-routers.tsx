@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Preloader } from "../../components";
-import { LoginPage } from "../../pages";
+import { LoginPage, RegisterPage } from "../../pages";
 
 const AuthRouters: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +34,19 @@ const AuthRouters: React.FC = () => {
                 transition={{ duration: 0.4 }}
               >
                 <LoginPage />
+              </motion.div>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4 }}
+              >
+                <RegisterPage />
               </motion.div>
             }
           />

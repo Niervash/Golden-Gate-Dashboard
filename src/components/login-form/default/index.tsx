@@ -134,7 +134,7 @@ const Label = ({ children, className = "", ...props }: LabelProps) => {
   );
 };
 
-type UserRole = "admin" | "kepsek" | "guru";
+type UserRole = "kepala-sekolah" | "admin-tu" | "subject-teacher" | "homeroom-teacher";
 
 const roles: {
   value: UserRole;
@@ -143,22 +143,28 @@ const roles: {
   description: string;
 }[] = [
   {
-    value: "admin",
-    label: "Administrator",
-    icon: Shield,
-    description: "Akses penuh ke semua fitur",
-  },
-  {
-    value: "kepsek",
+    value: "kepala-sekolah",
     label: "Kepala Sekolah",
-    icon: Users,
+    icon: Shield,
     description: "Monitoring & laporan sekolah",
   },
   {
-    value: "guru",
-    label: "Guru",
+    value: "admin-tu",
+    label: "Admin TU",
+    icon: Users,
+    description: "Administrasi & Tata Usaha",
+  },
+  {
+    value: "subject-teacher",
+    label: "Guru Mapel",
     icon: BookOpen,
-    description: "Akademik, absensi & penilaian",
+    description: "Akademik & penilaian",
+  },
+  {
+    value: "homeroom-teacher",
+    label: "Wali Kelas",
+    icon: GraduationCap,
+    description: "Pendampingan siswa",
   },
 ];
 
@@ -227,7 +233,7 @@ const LoginForm = () => {
           {/* Role Selection */}
           <div className="space-y-3">
             <Label>Masuk Sebagai</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {roles.map((role) => {
                 const Icon = role.icon;
                 const isSelected = selectedRole === role.value;
@@ -393,16 +399,16 @@ const LoginForm = () => {
           className="text-center text-sm mt-6 lg:mt-8"
           style={{ color: "#23305d" }}
         >
-          Butuh bantuan?{" "}
-          <a
-            href="#"
-            className="transition-colors"
+          Belum punya akun?{" "}
+          <Link
+            to="/auth/register"
+            className="transition-colors font-semibold"
             style={{ color: "#af9151" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#d9ab3f")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#af9151")}
           >
-            Hubungi Admin
-          </a>
+            Daftar sekarang
+          </Link>
         </p>
       </motion.div>
     </div>

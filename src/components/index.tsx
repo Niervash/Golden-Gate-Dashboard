@@ -17,5 +17,16 @@ export * from "./artikel";
 export * from "./calendar";
 export * from "./admin-data-guru";
 export * from "./text-through";
+export * from "./admin-students";
+export * from "./admin-academic";
+export * from "./admin-schedule";
+export * from "./admin-attendance";
+export * from "./admin-grades";
+export * from "./admin-counseling";
+export * from "./admin-achievements";
+export * from "./admin-announcements";
+export * from "./admin-archive";
+export * from "./admin-reports";
+export * from "./admin-settings";
 
 export { CardLogin, LoginBranding, Preloader };

@@ -22,6 +22,12 @@ import {
   GraduationCap,
   Book,
   CreditCard,
+  UserCheck,
+  Award,
+  HeartHandshake,
+  Megaphone,
+  Archive,
+  TrendingUp,
 } from "lucide-react";
 import { ILoveGGS } from "../../../assets";
 
@@ -89,13 +95,13 @@ const AdminHeader: React.FC = () => {
       key: "dashboard",
       label: "Dashboard",
       icon: <LayoutDashboard size={18} />,
-      href: "/admin/dashboard",
+      href: "/dashboard/admin-tu",
     },
     {
       key: "profile",
       label: "Profile",
       icon: <UserCircle size={18} />,
-      href: "/admin/profile",
+      href: "/dashboard/profile",
     },
   ];
 
@@ -106,10 +112,9 @@ const AdminHeader: React.FC = () => {
       label: "Data Siswa",
       icon: <GraduationCap size={16} />,
       onClick: () => {
-        console.log("Navigate to students");
         setIsAdminDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/students");
+        navigate("/dashboard/students");
       },
     },
     {
@@ -117,21 +122,9 @@ const AdminHeader: React.FC = () => {
       label: "Data Guru",
       icon: <Users size={16} />,
       onClick: () => {
-        console.log("Navigate to teachers");
         setIsAdminDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/teachers");
-      },
-    },
-    {
-      key: "subjects",
-      label: "Mata Pelajaran",
-      icon: <Book size={16} />,
-      onClick: () => {
-        console.log("Navigate to subjects");
-        setIsAdminDropdownOpen(false);
-        setIsMobileMenuOpen(false);
-        navigate("/admin/subjects");
+        navigate("/dashboard/teachers");
       },
     },
     {
@@ -139,10 +132,9 @@ const AdminHeader: React.FC = () => {
       label: "Akademik",
       icon: <BookOpen size={16} />,
       onClick: () => {
-        console.log("Navigate to academic");
         setIsAdminDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/academic");
+        navigate("/dashboard/academic");
       },
     },
     {
@@ -150,43 +142,59 @@ const AdminHeader: React.FC = () => {
       label: "Jadwal",
       icon: <Calendar size={16} />,
       onClick: () => {
-        console.log("Navigate to schedule");
         setIsAdminDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/schedule");
+        navigate("/dashboard/schedule");
       },
     },
     {
-      key: "finance",
-      label: "Keuangan",
-      icon: <CreditCard size={16} />,
+      key: "attendance",
+      label: "Absensi",
+      icon: <UserCheck size={16} />,
       onClick: () => {
-        console.log("Navigate to finance");
         setIsAdminDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/finance");
+        navigate("/dashboard/attendance");
       },
     },
     {
-      key: "messages",
-      label: "Pesan",
-      icon: <MessageSquare size={16} />,
+      key: "grades",
+      label: "Penilaian",
+      icon: <Award size={16} />,
       onClick: () => {
-        console.log("Navigate to messages");
         setIsAdminDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/messages");
+        navigate("/dashboard/grades");
+      },
+    },
+    {
+      key: "counseling",
+      label: "BK & Konseling",
+      icon: <HeartHandshake size={16} />,
+      onClick: () => {
+        setIsAdminDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/counseling");
+      },
+    },
+    {
+      key: "achievements",
+      label: "Prestasi",
+      icon: <Award size={16} />,
+      onClick: () => {
+        setIsAdminDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/achievements");
       },
     },
     {
       key: "reports",
       label: "Laporan",
-      icon: <FileText size={16} />,
+      icon: <TrendingUp size={16} />,
       onClick: () => {
-        console.log("Navigate to reports");
         setIsAdminDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/reports");
+        navigate("/dashboard/reports");
       },
     },
   ];
@@ -194,15 +202,23 @@ const AdminHeader: React.FC = () => {
   // More dropdown items
   const moreDropdownItems = [
     {
-      key: "notifications",
-      label: "Notifikasi",
-      icon: <Bell size={16} />,
-      count: 3,
+      key: "announcements",
+      label: "Pengumuman",
+      icon: <Megaphone size={16} />,
       onClick: () => {
-        console.log("Navigate to notifications");
         setIsMoreDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/notifications");
+        navigate("/dashboard/announcements");
+      },
+    },
+    {
+      key: "archives",
+      label: "Arsip Dokumen",
+      icon: <Archive size={16} />,
+      onClick: () => {
+        setIsMoreDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/archives");
       },
     },
     {
@@ -210,10 +226,9 @@ const AdminHeader: React.FC = () => {
       label: "Pengaturan",
       icon: <Settings size={16} />,
       onClick: () => {
-        console.log("Navigate to settings");
         setIsMoreDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/settings");
+        navigate("/dashboard/settings");
       },
     },
     {
@@ -221,21 +236,9 @@ const AdminHeader: React.FC = () => {
       label: "Bantuan",
       icon: <HelpCircle size={16} />,
       onClick: () => {
-        console.log("Navigate to help");
         setIsMoreDropdownOpen(false);
         setIsMobileMenuOpen(false);
-        navigate("/admin/help");
-      },
-    },
-    {
-      key: "admin-tools",
-      label: "Admin Tools",
-      icon: <Shield size={16} />,
-      onClick: () => {
-        console.log("Navigate to admin tools");
-        setIsMoreDropdownOpen(false);
-        setIsMobileMenuOpen(false);
-        navigate("/admin/tools");
+        navigate("/dashboard/help");
       },
     },
   ];
@@ -444,7 +447,7 @@ const AdminHeader: React.FC = () => {
             {/* Center - Logo */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
               <Link
-                to="/admin/dashboard"
+                to="/dashboard/admin-tu"
                 onClick={closeAllMenus}
                 className="flex items-center gap-3 group"
               >
@@ -749,6 +752,22 @@ const AdminHeader: React.FC = () => {
                       {adminDropdownItems.length > 4 && (
                         <div className="mt-3 grid grid-cols-2 gap-3">
                           {adminDropdownItems.slice(4, 8).map((item) => (
+                            <button
+                              key={item.key}
+                              onClick={item.onClick}
+                              className="flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 bg-[#23305d] border border-[#43424e] hover:border-[#d9ab3f] hover:bg-[#d9ab3f]/5"
+                            >
+                              <div className="mb-2 text-white">{item.icon}</div>
+                              <span className="text-xs font-medium text-center text-white">
+                                {item.label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {adminDropdownItems.length > 8 && (
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                          {adminDropdownItems.slice(8).map((item) => (
                             <button
                               key={item.key}
                               onClick={item.onClick}

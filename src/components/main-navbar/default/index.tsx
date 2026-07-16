@@ -190,6 +190,25 @@ const MainNavbar: React.FC = () => {
           <div className="hidden md:flex items-center gap-2 ml-auto">
             <LanguageSwitcher />
             <Link
+              to="/auth/login"
+              className="inline-flex items-center justify-center rounded-md text-sm font-bold transition-colors h-9 px-4 py-2 whitespace-nowrap"
+              style={{
+                background: "#d9ab3f",
+                color: "#23305d",
+                border: "1px solid #d9ab3f",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "#d9ab3f";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#d9ab3f";
+                e.currentTarget.style.color = "#23305d";
+              }}
+            >
+              Login
+            </Link>
+            <Link
               to="/ppdb"
               className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-3 py-2 whitespace-nowrap"
               style={{
@@ -323,6 +342,26 @@ const MainNavbar: React.FC = () => {
                   <div className="flex justify-start mb-2">
                     <LanguageSwitcher />
                   </div>
+                  <Link
+                    to="/auth/login"
+                    onClick={() => setIsOpen(false)}
+                    className="inline-flex items-center justify-center rounded-md text-sm font-bold transition-colors h-10 px-4 py-2 w-full"
+                    style={{
+                      background: "#d9ab3f",
+                      color: "#23305d",
+                      border: "1px solid #d9ab3f",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "#d9ab3f";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#d9ab3f";
+                      e.currentTarget.style.color = "#23305d";
+                    }}
+                  >
+                    Login
+                  </Link>
                   <Link
                     to="/ppdb"
                     onClick={() => setIsOpen(false)}
