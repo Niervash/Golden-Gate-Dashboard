@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "../../../layouts";
 import { FileSpreadsheet, ExternalLink, RefreshCw } from "lucide-react";
 import { Button, Spin, Select } from "antd";
@@ -13,41 +13,40 @@ const COLORS = {
   grayMedium: "#e9ecef",
 };
 
-// Daftar Google Spreadsheet Daily Lesson Plan yang bisa dipilih
-// Anda dapat mengedit label dan URL di bawah ini sesuai kebutuhan
+// Daftar Google Spreadsheet Daily Lesson Plan SMP per Guru Bidang Studi
 const LESSON_PLANS = [
   {
-    value: "SMP",
+    value: "sir-sem",
     label: "SIR SEM (PKN)",
     url: "https://docs.google.com/spreadsheets/d/1egmf77SxC2f0Og3Up7h4KDQtuXJoxqwt/edit?gid=1871866019#gid=1871866019",
   },
   {
-    value: "SMP",
+    value: "ms-sophie",
     label: "MS SOPHIE",
     url: "https://docs.google.com/spreadsheets/d/1nq9wU_U9LlSJ_hLfzZCJ5hXiIdKCLeiw/edit?gid=1708151715#gid=1708151715",
   },
   {
-    value: "SMP",
+    value: "ms-ririn",
     label: "MS RIRIN",
     url: "https://docs.google.com/spreadsheets/d/1sxfVT8pSz2qRUuYQNuzrO-wYsEBUUFv2/edit?gid=172235708#gid=172235708",
   },
   {
-    value: "SMP",
+    value: "ms-masyita",
     label: "MS MASYITA",
     url: "https://docs.google.com/spreadsheets/d/1nnBZJl2bvHdxBW3uJEy9-gywW3q2jn1N/edit?gid=2146208352#gid=2146208352",
   },
   {
-    value: "SMP",
+    value: "sir-maul-g1",
     label: "SIR MAUL - GRADE 1",
     url: "https://docs.google.com/spreadsheets/d/13QVDOyjwfv1hqC4qDdJciZDEUix3c5mM/edit?gid=464424798#gid=464424798",
   },
   {
-    value: "SMP",
+    value: "sir-maul-g2",
     label: "SIR MAUL - GRADE 2",
     url: "https://docs.google.com/spreadsheets/d/1vgeSBGMB1kTBTm0JsLdNDvudzL7_mqgt/edit?gid=1237535744#gid=1237535744",
   },
   {
-    value: "SMP",
+    value: "sir-maul-g3",
     label: "SIR MAUL - GRADE 3",
     url: "https://docs.google.com/spreadsheets/d/10sS2sDaZI4vocPh3mjLlrYYW7A8D56Mg/edit?gid=1891566894#gid=1891566894",
   },
@@ -59,6 +58,12 @@ const LessonPlanPage: React.FC = () => {
   );
   const [loading, setLoading] = useState(true);
   const [iframeKey, setIframeKey] = useState(0);
+
+  // Memicu refresh otomatis & tampilkan loading spinner ketika opsi dropdown dipilih
+  useEffect(() => {
+    setLoading(true);
+    setIframeKey((prev) => prev + 1);
+  }, [selectedPlanValue]);
 
   // Ambil data plan yang aktif berdasarkan state
   const activePlan =
@@ -88,9 +93,7 @@ const LessonPlanPage: React.FC = () => {
   };
 
   const handleSelectChange = (value: string) => {
-    setLoading(true);
     setSelectedPlanValue(value);
-    setIframeKey((prev) => prev + 1);
   };
 
   return (
@@ -116,7 +119,7 @@ const LessonPlanPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <div className="flex items-center gap-2 flex-grow md:flex-grow-0 min-w-[250px]">
               <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
-                Pilih Unit:
+                Pilih Guru:
               </span>
               <Select
                 value={selectedPlanValue}
