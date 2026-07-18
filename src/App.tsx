@@ -1,5 +1,7 @@
 import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./context";
+import { ProtectedRoute, GuestRoute } from "./routers/protected-route";
 import UsersRoute from "./routers/users/users-routers";
 import AuthRouters from "./routers/auth/auth-routers";
 import AdminRouters from "./routers/admin-tu/admin-routers";
@@ -7,14 +9,44 @@ import TeachersRouters from "./routers/teachers/teachers-route";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/*" element={<UsersRoute />} />
-        <Route path="/auth/*" element={<AuthRouters />} />
-        <Route path="/dashboard/*" element={<AdminRouters />} />
-        <Route path="/teachers/*" element={<TeachersRouters />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/*" element={<UsersRoute />} />
+          
+          {/* Auth Routes (restricted to guest users) */}
+          <Route 
+            path="/auth/*" 
+            element={
+              <GuestRoute>
+                <AuthRouters />
+              </GuestRoute>
+            } 
+          />
+          
+          {/* Admin & Principal Dashboard Routes */}
+          <Route 
+            path="/dashboard/*" 
+            element={
+              <ProtectedRoute allowedRoles={["admin", "kepsek", "guru"]}>
+                <AdminRouters />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Teacher Dashboard Routes */}
+          <Route 
+            path="/teachers/*" 
+            element={
+              <ProtectedRoute allowedRoles={["admin", "guru"]}>
+                <TeachersRouters />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

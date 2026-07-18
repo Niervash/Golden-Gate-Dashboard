@@ -28,8 +28,10 @@ import {
   Megaphone,
   Archive,
   TrendingUp,
+  FileSpreadsheet,
 } from "lucide-react";
 import { ILoveGGS } from "../../../assets";
+import { useAuth, roleLabels } from "../../../context";
 
 interface MenuItem {
   key: string;
@@ -49,6 +51,8 @@ const AdminHeader: React.FC = () => {
   const moreDropdownRef = useRef<HTMLDivElement>(null);
   const adminButtonRef = useRef<HTMLButtonElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  const { user, logout } = useAuth();
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -89,13 +93,25 @@ const AdminHeader: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [scrolled]);
 
+  const getDashboardHref = () => {
+    if (user?.role === "kepsek") return "/dashboard/principal";
+    if (user?.role === "guru") return "/teachers/dashboard_guru";
+    return "/dashboard/admin-tu";
+  };
+
   // Main menu items (WHITE TEXT)
   const mainMenuItems: MenuItem[] = [
     {
       key: "dashboard",
       label: "Dashboard",
       icon: <LayoutDashboard size={18} />,
-      href: "/dashboard/admin-tu",
+      href: getDashboardHref(),
+    },
+    {
+      key: "lesson-plan-main",
+      label: "Daily Lesson Plan",
+      icon: <FileSpreadsheet size={18} />,
+      href: "/dashboard/lesson-plan",
     },
     {
       key: "profile",
@@ -197,6 +213,16 @@ const AdminHeader: React.FC = () => {
         navigate("/dashboard/reports");
       },
     },
+    {
+      key: "lesson-plan",
+      label: "Daily Lesson Plan",
+      icon: <FileSpreadsheet size={16} />,
+      onClick: () => {
+        setIsAdminDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/lesson-plan");
+      },
+    },
   ];
 
   // More dropdown items
@@ -242,6 +268,29 @@ const AdminHeader: React.FC = () => {
       },
     },
   ];
+
+  // Allowed keys based on role
+  const allowedAdminKeys: Record<string, string[]> = {
+    admin: ["students", "teachers", "academic", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan"],
+    kepsek: ["students", "teachers", "academic", "schedule", "achievements", "reports", "lesson-plan"],
+    guru: ["students", "academic", "schedule", "attendance", "grades", "lesson-plan"],
+  };
+
+  const allowedMoreKeys: Record<string, string[]> = {
+    admin: ["announcements", "archives", "settings", "help"],
+    kepsek: ["announcements", "help"],
+    guru: ["announcements", "help"],
+  };
+
+  const currentAllowedAdminKeys = user?.role ? allowedAdminKeys[user.role] : [];
+  const filteredAdminDropdownItems = adminDropdownItems.filter(item =>
+    currentAllowedAdminKeys.includes(item.key)
+  );
+
+  const currentAllowedMoreKeys = user?.role ? allowedMoreKeys[user.role] : [];
+  const filteredMoreDropdownItems = moreDropdownItems.filter(item =>
+    currentAllowedMoreKeys.includes(item.key)
+  );
 
   // Check active menu
   const isActive = (path: string) => {
@@ -409,7 +458,7 @@ const AdminHeader: React.FC = () => {
                           </p>
                         </div>
                         <div className="grid grid-cols-2 gap-1">
-                          {adminDropdownItems.map((item) => (
+                          {filteredAdminDropdownItems.map((item) => (
                             <button
                               key={item.key}
                               onClick={item.onClick}
@@ -522,7 +571,7 @@ const AdminHeader: React.FC = () => {
                         }}
                       >
                         <div className="p-2">
-                          {moreDropdownItems.map((item) => (
+                          {filteredMoreDropdownItems.map((item) => (
                             <button
                               key={item.key}
                               onClick={item.onClick}
@@ -574,9 +623,11 @@ const AdminHeader: React.FC = () => {
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#23305d] bg-green-500" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-white">Admin</p>
+                    <p className="text-sm font-semibold text-white truncate max-w-[120px]">
+                      {user?.name || "User"}
+                    </p>
                     <p className="text-xs" style={{ color: "#af9151" }}>
-                      Super Admin
+                      {user?.role ? roleLabels[user.role] : "Guest"}
                     </p>
                   </div>
                 </div>
@@ -585,6 +636,7 @@ const AdminHeader: React.FC = () => {
                 <button
                   onClick={() => {
                     closeAllMenus();
+                    logout();
                     navigate("/");
                   }}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ml-1"
@@ -677,14 +729,14 @@ const AdminHeader: React.FC = () => {
                         <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#1d2950] bg-green-500" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-bold text-white text-lg">
-                          Administrator
+                        <h3 className="font-bold text-white text-lg truncate max-w-[150px]">
+                          {user?.name || "User"}
                         </h3>
                         <p
                           className="text-sm mt-0.5"
                           style={{ color: "#af9151" }}
                         >
-                          Super Admin • Full Access
+                          {user?.role ? roleLabels[user.role] : "Guest"}
                         </p>
                       </div>
                     </div>
@@ -731,12 +783,12 @@ const AdminHeader: React.FC = () => {
                           className="text-xs uppercase tracking-wider font-semibold"
                           style={{ color: "#d9ab3f" }}
                         >
-                          Admin Management
+                          Management Tools
                         </h4>
                         <Shield size={14} className="text-[#d9ab3f]" />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        {adminDropdownItems.slice(0, 4).map((item) => (
+                        {filteredAdminDropdownItems.slice(0, 4).map((item) => (
                           <button
                             key={item.key}
                             onClick={item.onClick}
@@ -749,9 +801,9 @@ const AdminHeader: React.FC = () => {
                           </button>
                         ))}
                       </div>
-                      {adminDropdownItems.length > 4 && (
+                      {filteredAdminDropdownItems.length > 4 && (
                         <div className="mt-3 grid grid-cols-2 gap-3">
-                          {adminDropdownItems.slice(4, 8).map((item) => (
+                          {filteredAdminDropdownItems.slice(4, 8).map((item) => (
                             <button
                               key={item.key}
                               onClick={item.onClick}
@@ -765,9 +817,9 @@ const AdminHeader: React.FC = () => {
                           ))}
                         </div>
                       )}
-                      {adminDropdownItems.length > 8 && (
+                      {filteredAdminDropdownItems.length > 8 && (
                         <div className="mt-3 grid grid-cols-2 gap-3">
-                          {adminDropdownItems.slice(8).map((item) => (
+                          {filteredAdminDropdownItems.slice(8).map((item) => (
                             <button
                               key={item.key}
                               onClick={item.onClick}
@@ -792,7 +844,7 @@ const AdminHeader: React.FC = () => {
                         Lainnya
                       </h4>
                       <div className="space-y-2">
-                        {moreDropdownItems.map((item) => (
+                        {filteredMoreDropdownItems.map((item) => (
                           <button
                             key={item.key}
                             onClick={item.onClick}
@@ -856,6 +908,7 @@ const AdminHeader: React.FC = () => {
                       <button
                         onClick={() => {
                           closeAllMenus();
+                          logout();
                           navigate("/");
                         }}
                         className="flex items-center justify-center gap-2 w-full p-3.5 rounded-lg transition-all duration-200 font-semibold"

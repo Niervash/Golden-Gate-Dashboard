@@ -18,6 +18,9 @@ import AnnouncementsPage from "../../pages/admin-tu/announcements";
 import ArchivesPage from "../../pages/admin-tu/archives";
 import ReportsPage from "../../pages/admin-tu/reports";
 import SettingsPage from "../../pages/admin-tu/settings";
+import PrincipalPage from "../../pages/principal";
+import LessonPlanPage from "../../pages/admin-tu/lesson-plan";
+import { useAuth, type UserRole } from "../../context";
 
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <motion.div
@@ -29,6 +32,31 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     {children}
   </motion.div>
 );
+
+const RoleGuard: React.FC<{ children: React.ReactNode; allowedRoles: UserRole[] }> = ({ children, allowedRoles }) => {
+  const { user } = useAuth();
+  if (!user || !allowedRoles.includes(user.role)) {
+    if (user?.role === "kepsek") {
+      return <Navigate to="/dashboard/principal" replace />;
+    } else if (user?.role === "guru") {
+      return <Navigate to="/teachers/dashboard_guru" replace />;
+    } else {
+      return <Navigate to="/dashboard/admin-tu" replace />;
+    }
+  }
+  return <>{children}</>;
+};
+
+const DashboardIndex = () => {
+  const { user } = useAuth();
+  if (user?.role === "kepsek") {
+    return <Navigate to="principal" replace />;
+  }
+  if (user?.role === "guru") {
+    return <Navigate to="/teachers/dashboard_guru" replace />;
+  }
+  return <Navigate to="admin-tu" replace />;
+};
 
 const AdminRouters: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -50,22 +78,25 @@ const AdminRouters: React.FC = () => {
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route index element={<Navigate to="admin-tu" replace />} />
-          <Route path="admin-tu" element={<PageWrapper><AdminPages /></PageWrapper>} />
-          <Route path="admin-sapras" element={<PageWrapper><InventarisCode /></PageWrapper>} />
+          <Route index element={<DashboardIndex />} />
           
-          <Route path="students" element={<PageWrapper><StudentsPage /></PageWrapper>} />
-          <Route path="teachers" element={<PageWrapper><TeachersPage /></PageWrapper>} />
-          <Route path="academic" element={<PageWrapper><AcademicPage /></PageWrapper>} />
-          <Route path="schedule" element={<PageWrapper><SchedulePage /></PageWrapper>} />
-          <Route path="attendance" element={<PageWrapper><AttendancePage /></PageWrapper>} />
-          <Route path="grades" element={<PageWrapper><GradesPage /></PageWrapper>} />
-          <Route path="counseling" element={<PageWrapper><CounselingPage /></PageWrapper>} />
-          <Route path="achievements" element={<PageWrapper><AchievementsPage /></PageWrapper>} />
-          <Route path="announcements" element={<PageWrapper><AnnouncementsPage /></PageWrapper>} />
-          <Route path="archives" element={<PageWrapper><ArchivesPage /></PageWrapper>} />
-          <Route path="reports" element={<PageWrapper><ReportsPage /></PageWrapper>} />
-          <Route path="settings" element={<PageWrapper><SettingsPage /></PageWrapper>} />
+          <Route path="admin-tu" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><AdminPages /></PageWrapper></RoleGuard>} />
+          <Route path="admin-sapras" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><InventarisCode /></PageWrapper></RoleGuard>} />
+          <Route path="principal" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><PrincipalPage /></PageWrapper></RoleGuard>} />
+          <Route path="lesson-plan" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><LessonPlanPage /></PageWrapper></RoleGuard>} />
+          
+          <Route path="students" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><StudentsPage /></PageWrapper></RoleGuard>} />
+          <Route path="teachers" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><TeachersPage /></PageWrapper></RoleGuard>} />
+          <Route path="academic" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><AcademicPage /></PageWrapper></RoleGuard>} />
+          <Route path="schedule" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><SchedulePage /></PageWrapper></RoleGuard>} />
+          <Route path="attendance" element={<RoleGuard allowedRoles={["admin", "guru"]}><PageWrapper><AttendancePage /></PageWrapper></RoleGuard>} />
+          <Route path="grades" element={<RoleGuard allowedRoles={["admin", "guru"]}><PageWrapper><GradesPage /></PageWrapper></RoleGuard>} />
+          <Route path="counseling" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><CounselingPage /></PageWrapper></RoleGuard>} />
+          <Route path="achievements" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><AchievementsPage /></PageWrapper></RoleGuard>} />
+          <Route path="announcements" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><AnnouncementsPage /></PageWrapper></RoleGuard>} />
+          <Route path="archives" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><ArchivesPage /></PageWrapper></RoleGuard>} />
+          <Route path="reports" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><ReportsPage /></PageWrapper></RoleGuard>} />
+          <Route path="settings" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><SettingsPage /></PageWrapper></RoleGuard>} />
         </Routes>
       </AnimatePresence>
     </>

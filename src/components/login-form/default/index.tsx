@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   GraduationCap,
   Eye,
@@ -11,6 +11,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { ILoveGGS } from "../../../assets";
+import { useAuth } from "../../../context";
 
 // Komponen Button Manual dengan palette baru
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -174,10 +175,35 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted - Logic akan dihandle oleh BE nanti");
+    if (!selectedRole) {
+      alert("Silakan pilih salah satu role untuk masuk.");
+      return;
+    }
+
+    let contextRole: "admin" | "kepsek" | "guru" = "admin";
+    if (selectedRole === "kepala-sekolah") {
+      contextRole = "kepsek";
+    } else if (selectedRole === "admin-tu") {
+      contextRole = "admin";
+    } else if (selectedRole === "subject-teacher" || selectedRole === "homeroom-teacher") {
+      contextRole = "guru";
+    }
+
+    login(contextRole);
+
+    if (contextRole === "kepsek") {
+      navigate("/dashboard/principal");
+    } else if (contextRole === "guru") {
+      navigate("/teachers/dashboard_guru");
+    } else {
+      navigate("/dashboard/admin-tu");
+    }
   };
 
   return (

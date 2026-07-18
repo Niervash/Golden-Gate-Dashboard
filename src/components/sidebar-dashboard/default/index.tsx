@@ -22,6 +22,7 @@ import {
   Home,
   X,
 } from "lucide-react";
+import { useAuth, roleLabels } from "../../../context";
 
 interface DashboardSidebarProps {
   collapsed?: boolean;
@@ -29,28 +30,6 @@ interface DashboardSidebarProps {
   onMobileClose?: () => void;
   isMobile?: boolean;
 }
-
-// Mock untuk useAuth
-const useAuth = () => {
-  return {
-    user: {
-      name: "Admin User",
-      role: "admin",
-      email: "admin@goldengate.sch.id",
-    },
-    logout: () => {
-      console.log("Logout called");
-    },
-  };
-};
-
-// Role configuration
-const roleLabels: Record<string, string> = {
-  admin: "Administrator",
-  kepsek: "Kepala Sekolah",
-  guru: "Guru",
-  siswa: "Siswa",
-};
 
 // Role menu configuration
 const roleMenuConfig: Record<string, string[]> = {
