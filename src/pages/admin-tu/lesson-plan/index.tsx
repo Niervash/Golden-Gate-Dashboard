@@ -50,6 +50,26 @@ const LESSON_PLANS = [
     label: "SIR MAUL - GRADE 3",
     url: "https://docs.google.com/spreadsheets/d/10sS2sDaZI4vocPh3mjLlrYYW7A8D56Mg/edit?gid=1891566894#gid=1891566894",
   },
+  {
+    value: "sir-julian-g1",
+    label: "SIR JULIAN - GRADE 1",
+    url: "https://docs.google.com/spreadsheets/d/1DvQ-RK09ea4_2HcyCFxvMacS4ZUdg-Ia/edit?gid=618072638#gid=618072638",
+  },
+  {
+    value: "sir-julian-g2",
+    label: "SIR JULIAN - GRADE 2",
+    url: "https://docs.google.com/spreadsheets/d/1YHP6xl44jrWw7LCz33kJdhJEJtmacBNL/edit?gid=47815657#gid=47815657",
+  },
+  {
+    value: "sir-julian-g3",
+    label: "SIR JULIAN - GRADE 3",
+    url: "https://docs.google.com/spreadsheets/d/1sWKcHJ17XfI5omf8EuQTlfHFSacgTYio/edit?gid=1969637497#gid=1969637497",
+  },
+  {
+    value: "sir-julian-g3",
+    label: "SIR JULIAN - GRADE 3",
+    url: "https://docs.google.com/spreadsheets/d/1sWKcHJ17XfI5omf8EuQTlfHFSacgTYio/edit?gid=1969637497#gid=1969637497",
+  },
 ];
 
 const LessonPlanPage: React.FC = () => {
