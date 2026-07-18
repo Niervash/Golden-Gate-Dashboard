@@ -17,24 +17,39 @@ const COLORS = {
 // Anda dapat mengedit label dan URL di bawah ini sesuai kebutuhan
 const LESSON_PLANS = [
   {
-    value: "sd",
-    label: "Daily Lesson Plan - Elementary School (SD)",
-    url: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKv36dx67GLTSAXOB4g1I74ABBJ60/edit?usp=sharing",
+    value: "SMP",
+    label: "SIR SEM (PKN)",
+    url: "https://docs.google.com/spreadsheets/d/1egmf77SxC2f0Og3Up7h4KDQtuXJoxqwt/edit?gid=1871866019#gid=1871866019",
   },
   {
-    value: "smp",
-    label: "Daily Lesson Plan - Junior High School (SMP)",
-    url: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKv36dx67GLTSAXOB4g1I74ABBJ60/edit?usp=sharing",
+    value: "SMP",
+    label: "MS SOPHIE",
+    url: "https://docs.google.com/spreadsheets/d/1nq9wU_U9LlSJ_hLfzZCJ5hXiIdKCLeiw/edit?gid=1708151715#gid=1708151715",
   },
   {
-    value: "sma",
-    label: "Daily Lesson Plan - Senior High School (SMA)",
-    url: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKv36dx67GLTSAXOB4g1I74ABBJ60/edit?usp=sharing",
+    value: "SMP",
+    label: "MS RIRIN",
+    url: "https://docs.google.com/spreadsheets/d/1sxfVT8pSz2qRUuYQNuzrO-wYsEBUUFv2/edit?gid=172235708#gid=172235708",
   },
   {
-    value: "sma",
-    label: "Daily Lesson Plan - Sasdas",
-    url: "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKv36dx67GLTSAXOB4g1I74ABBJ60/edit?usp=sharing",
+    value: "SMP",
+    label: "MS MASYITA",
+    url: "https://docs.google.com/spreadsheets/d/1nnBZJl2bvHdxBW3uJEy9-gywW3q2jn1N/edit?gid=2146208352#gid=2146208352",
+  },
+  {
+    value: "SMP",
+    label: "SIR MAUL - GRADE 1",
+    url: "https://docs.google.com/spreadsheets/d/13QVDOyjwfv1hqC4qDdJciZDEUix3c5mM/edit?gid=464424798#gid=464424798",
+  },
+  {
+    value: "SMP",
+    label: "SIR MAUL - GRADE 2",
+    url: "https://docs.google.com/spreadsheets/d/1vgeSBGMB1kTBTm0JsLdNDvudzL7_mqgt/edit?gid=1237535744#gid=1237535744",
+  },
+  {
+    value: "SMP",
+    label: "SIR MAUL - GRADE 3",
+    url: "https://docs.google.com/spreadsheets/d/10sS2sDaZI4vocPh3mjLlrYYW7A8D56Mg/edit?gid=1891566894#gid=1891566894",
   },
 ];
 
@@ -51,12 +66,15 @@ const LessonPlanPage: React.FC = () => {
     LESSON_PLANS[0];
   const spreadsheetUrl = activePlan.url;
 
-  // Format URL agar rapi saat diembed di iframe
+  // Format URL agar menu ribbon Google Sheets tetap tampil
   const getEmbedUrl = (url: string) => {
     try {
       if (url.includes("docs.google.com/spreadsheets")) {
-        // Ganti path /edit menjadi /preview agar tampilan clean tanpa editor menu
-        return url.replace(/\/edit(\?.*)?$/, "/preview");
+        // Ganti path /preview menjadi /edit agar ribbon/toolbar editor lengkap tetap muncul
+        if (url.includes("/preview")) {
+          return url.replace(/\/preview(\?.*)?$/, "/edit");
+        }
+        return url;
       }
       return url;
     } catch (e) {
@@ -91,7 +109,8 @@ const LessonPlanPage: React.FC = () => {
               className="text-sm text-left"
               style={{ color: COLORS.secondary }}
             >
-              Monitoring Rencana Pelaksanaan Pembelajaran Harian Guru.
+              Monitoring Rencana Pelaksanaan Pembelajaran Harian Guru dengan
+              Menu Lengkap.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -143,20 +162,19 @@ const LessonPlanPage: React.FC = () => {
               Lembar Kerja Terintegrasi - {activePlan.label}
             </p>
             <p className="text-xs text-gray-500 text-left">
-              Lembar kerja di bawah ini terhubung langsung dengan Google Sheets
-              unit yang dipilih untuk memantau rencana pembelajaran harian
-              secara real-time.
+              Gunakan bilah menu Google Sheets di bawah ini untuk berpindah
+              lembar (sheets), mencari data, atau melakukan navigasi penuh.
             </p>
           </div>
         </div>
 
-        {/* Iframe Viewport */}
+        {/* Iframe Viewport - Dioptimalkan tingginya untuk desktop */}
         <div
           className="relative w-full rounded-2xl border bg-white overflow-hidden shadow-sm flex flex-col"
           style={{
             borderColor: COLORS.grayMedium,
-            height: "calc(100vh - 280px)",
-            minHeight: "550px",
+            height: "calc(100vh - 210px)",
+            minHeight: "680px",
           }}
         >
           {loading && (

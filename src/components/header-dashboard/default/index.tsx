@@ -401,7 +401,7 @@ const AdminHeader: React.FC = () => {
                     e.currentTarget.style.color = "#ffffff";
                     e.currentTarget.style.background = "transparent";
                   }}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 "
+                  className="flex items-center gap-1.5 px-2 xl:px-4 py-2.5 text-xs xl:text-sm font-medium rounded-lg transition-all duration-200 "
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -416,7 +416,7 @@ const AdminHeader: React.FC = () => {
                     setIsAdminDropdownOpen(!isAdminDropdownOpen);
                     setIsMoreDropdownOpen(false);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 px-2 xl:px-4 py-2.5 text-xs xl:text-sm font-medium rounded-lg transition-all duration-200 ${
                     isAdminDropdownOpen
                       ? "text-[#d9ab3f] bg-[#d9ab3f]/10"
                       : "text-white hover:text-[#d9ab3f] hover:bg-[#d9ab3f]/8"
@@ -505,16 +505,16 @@ const AdminHeader: React.FC = () => {
                   <img
                     src={ILoveGGS}
                     alt="Logo Golden Gate School"
-                    className="w-10 h-10"
+                    className="w-8 h-8 lg:w-10 lg:h-10"
                   />
                   {/* Decorative corner */}
                   <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#d9ab3f]/30" />
                 </div>
 
                 {/* Text Container */}
-                <div className="hidden lg:block">
+                <div className="hidden md:block">
                   <div className="flex items-baseline gap-1">
-                    <h1 className="text-lg font-bold text-white leading-tight">
+                    <h1 className="text-md lg:text-lg font-bold text-white leading-tight">
                       GOLDEN
                       <span className="text-[#d9ab3f] ml-1">GATE</span>
                       <span className="text-white ml-1">SCHOOL</span>
@@ -539,7 +539,7 @@ const AdminHeader: React.FC = () => {
                       setIsMoreDropdownOpen(!isMoreDropdownOpen);
                       setIsAdminDropdownOpen(false);
                     }}
-                    className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 px-2 xl:px-4 py-2.5 text-xs xl:text-sm font-medium rounded-lg transition-all duration-200 ${
                       isMoreDropdownOpen
                         ? "text-[#d9ab3f] bg-[#d9ab3f]/10"
                         : "text-white hover:text-[#d9ab3f] hover:bg-[#d9ab3f]/8"
@@ -622,7 +622,7 @@ const AdminHeader: React.FC = () => {
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[#23305d] bg-green-500" />
                   </div>
-                  <div className="text-left">
+                  <div className="hidden xl:block text-left">
                     <p className="text-sm font-semibold text-white truncate max-w-[120px]">
                       {user?.name || "User"}
                     </p>
@@ -639,7 +639,7 @@ const AdminHeader: React.FC = () => {
                     logout();
                     navigate("/");
                   }}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ml-1"
+                  className="flex items-center gap-1 xl:gap-2 px-2 xl:px-4 py-2.5 text-xs xl:text-sm font-medium rounded-lg transition-all duration-200 ml-1"
                   style={{
                     border: "1px solid #d9ab3f",
                     color: "#d9ab3f",
@@ -749,13 +749,13 @@ const AdminHeader: React.FC = () => {
                       >
                         Menu Utama
                       </h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
                         {mainMenuItems.map((item) => (
                           <Link
                             key={item.key}
                             to={item.href}
                             onClick={closeAllMenus}
-                            className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 ${
+                            className={`flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl transition-all duration-200 ${
                               isActive(item.href)
                                 ? "bg-[#d9ab3f]/10 border-2 border-[#d9ab3f]"
                                 : "bg-[#23305d] border border-[#43424e] hover:border-[#d9ab3f] hover:bg-[#d9ab3f]/5"
@@ -767,7 +767,7 @@ const AdminHeader: React.FC = () => {
                               {item.icon}
                             </div>
                             <span
-                              className={`text-sm font-medium ${isActive(item.href) ? "text-[#d9ab3f]" : "text-white"}`}
+                              className={`text-xs sm:text-sm font-medium ${isActive(item.href) ? "text-[#d9ab3f]" : "text-white"}`}
                             >
                               {item.label}
                             </span>
