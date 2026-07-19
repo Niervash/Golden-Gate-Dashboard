@@ -3,6 +3,7 @@ import LoginBranding from "./login-brand";
 import CardLogin from "./login-card";
 
 export * from "./main-navbar";
+export * from "./main-sidebar";
 export * from "./main-footer";
 export * from "./cta-section";
 export * from "./contact";

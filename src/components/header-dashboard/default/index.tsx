@@ -29,6 +29,7 @@ import {
   Archive,
   TrendingUp,
   FileSpreadsheet,
+  Package,
 } from "lucide-react";
 import { ILoveGGS } from "../../../assets";
 import { useAuth, roleLabels } from "../../../context";
@@ -223,6 +224,16 @@ const AdminHeader: React.FC = () => {
         navigate("/dashboard/lesson-plan");
       },
     },
+    {
+      key: "sapras",
+      label: "Data Sapras",
+      icon: <Package size={16} />,
+      onClick: () => {
+        setIsAdminDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/admin-sapras");
+      },
+    },
   ];
 
   // More dropdown items
@@ -271,8 +282,8 @@ const AdminHeader: React.FC = () => {
 
   // Allowed keys based on role
   const allowedAdminKeys: Record<string, string[]> = {
-    admin: ["students", "teachers", "academic", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan"],
-    kepsek: ["students", "teachers", "academic", "schedule", "achievements", "reports", "lesson-plan"],
+    admin: ["students", "teachers", "academic", "sapras", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan"],
+    kepsek: ["students", "teachers", "academic", "sapras", "schedule", "achievements", "reports", "lesson-plan"],
     guru: ["students", "academic", "schedule", "attendance", "grades", "lesson-plan"],
   };
 
@@ -423,7 +434,7 @@ const AdminHeader: React.FC = () => {
                   }`}
                 >
                   <Shield size={16} />
-                  <span>Admin</span>
+                  <span>{user?.role ? roleLabels[user.role] : "Menu"}</span>
                   <motion.div
                     animate={{ rotate: isAdminDropdownOpen ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
@@ -451,10 +462,12 @@ const AdminHeader: React.FC = () => {
                       <div className="p-2">
                         <div className="px-3 py-2 mb-1 border-b border-[#43424e]">
                           <p className="text-xs font-semibold text-[#d9ab3f] uppercase tracking-wider">
-                            Admin Management
+                            {user?.role ? `${roleLabels[user.role]} Menu` : "Menu"}
                           </p>
                           <p className="text-xs text-[#af9151] mt-0.5">
-                            Fitur khusus administrator
+                            {user?.role === "admin" && "Fitur khusus administrator"}
+                            {user?.role === "kepsek" && "Fitur khusus kepala sekolah"}
+                            {user?.role === "guru" && "Fitur khusus guru"}
                           </p>
                         </div>
                         <div className="grid grid-cols-2 gap-1">
@@ -776,14 +789,14 @@ const AdminHeader: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Admin Tools Section */}
+                    {/* Role Tools Section */}
                     <div className="mb-6">
                       <div className="flex items-center justify-between mb-3 px-1">
                         <h4
                           className="text-xs uppercase tracking-wider font-semibold"
                           style={{ color: "#d9ab3f" }}
                         >
-                          Management Tools
+                          {user?.role ? `Menu ${roleLabels[user.role]}` : "Management Tools"}
                         </h4>
                         <Shield size={14} className="text-[#d9ab3f]" />
                       </div>

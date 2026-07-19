@@ -5,23 +5,10 @@ import { Preloader } from "../../components";
 import TeachersPages from "../../pages/teachers";
 
 const TeachersRouters: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    setIsLoading(true);
-
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
 
   return (
     <>
-      <Preloader show={isLoading} />
-
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route index element={<Navigate to="/teachers" replace />} />

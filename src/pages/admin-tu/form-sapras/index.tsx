@@ -347,23 +347,23 @@ const InventarisCode: React.FC = () => {
     };
 
     const categoryColors: Record<string, string> = {
-      ELC: "bg-blue-100 text-blue-700",
-      FUR: "bg-amber-100 text-amber-700",
-      ATK: "bg-green-100 text-green-700",
-      MES: "bg-red-100 text-red-700",
-      KMP: "bg-purple-100 text-purple-700",
-      JLN: "bg-cyan-100 text-cyan-700",
-      LBN: "bg-indigo-100 text-indigo-700",
-      KTR: "bg-yellow-100 text-yellow-700",
-      GDG: "bg-orange-100 text-orange-700",
-      LNY: "bg-gray-100 text-gray-700",
+      ELC: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+      FUR: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+      ATK: "bg-green-500/20 text-green-300 border border-green-500/30",
+      MES: "bg-red-500/20 text-red-300 border border-red-500/30",
+      KMP: "bg-purple-500/20 text-purple-300 border border-purple-500/30",
+      JLN: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30",
+      LBN: "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
+      KTR: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30",
+      GDG: "bg-orange-500/20 text-orange-300 border border-orange-500/30",
+      LNY: "bg-gray-500/20 text-gray-300 border border-gray-500/30",
     };
 
     const statusColors: Record<string, string> = {
-      Tersedia: "bg-emerald-100 text-emerald-700",
-      Dipinjam: "bg-amber-100 text-amber-700",
-      Rusak: "bg-red-100 text-red-700",
-      Dihapus: "bg-gray-100 text-gray-500",
+      Tersedia: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+      Dipinjam: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+      Rusak: "bg-red-500/20 text-red-300 border border-red-500/30",
+      Dihapus: "bg-gray-500/20 text-gray-400 border border-gray-500/30",
     };
 
     const sorted = [...history].reverse();
@@ -376,12 +376,12 @@ const InventarisCode: React.FC = () => {
       return (
         <tr
           key={item.code}
-          className="hover:bg-blue-50/50 transition-all duration-200 group"
+          className="hover:bg-white/5 border-b border-[#43424e]/50 transition-all duration-200 group"
         >
-          <td className="py-3 px-4 font-mono font-semibold text-blue-700 text-sm">
+          <td className="py-3 px-4 font-mono font-semibold text-[#d9ab3f] text-sm">
             {item.code}
           </td>
-          <td className="py-3 px-4 text-gray-800">{item.name}</td>
+          <td className="py-3 px-4 text-white font-medium">{item.name}</td>
           <td className="py-3 px-4">
             <span
               className={`inline-block text-xs font-medium px-3 py-1 rounded-full ${catColor}`}
@@ -389,8 +389,8 @@ const InventarisCode: React.FC = () => {
               {catLabel}
             </span>
           </td>
-          <td className="py-3 px-4 text-gray-600 text-sm">{item.location}</td>
-          <td className="py-3 px-4 text-center font-semibold text-gray-700">
+          <td className="py-3 px-4 text-slate-300 text-sm">{item.location}</td>
+          <td className="py-3 px-4 text-center font-semibold text-white">
             {item.quantity}
           </td>
           <td className="py-3 px-4">
@@ -400,13 +400,13 @@ const InventarisCode: React.FC = () => {
               {item.status}
             </span>
           </td>
-          <td className="py-3 px-4 text-gray-500 text-sm max-w-xs truncate">
+          <td className="py-3 px-4 text-slate-400 text-sm max-w-xs truncate">
             {item.notes}
           </td>
           <td className="py-3 px-4">
             <button
               onClick={() => deleteHistoryItem(item.code)}
-              className="text-gray-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100"
+              className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100"
               title="Hapus item ini"
             >
               <X size={16} />
@@ -427,7 +427,7 @@ const InventarisCode: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-start justify-center p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-[#121833] text-white flex items-start justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-6xl">
           {/* Toast Notification */}
           {toast.show && (
@@ -442,9 +442,9 @@ const InventarisCode: React.FC = () => {
           )}
 
           {/* Main Card */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 overflow-hidden">
+          <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-[#43424e] overflow-hidden">
             {/* Header dengan gradien */}
-            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-8 sm:px-8 sm:py-10">
+            <div className="bg-gradient-to-r from-[#23305d] via-[#1a2347] to-[#121833] px-6 py-8 sm:px-8 sm:py-10 border-b border-[#43424e]">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 <div className="bg-white/20 backdrop-blur-sm p-3.5 rounded-2xl shadow-lg flex-shrink-0">
                   <Barcode size={32} className="text-white" />
@@ -485,7 +485,7 @@ const InventarisCode: React.FC = () => {
                   <div className="space-y-1.5">
                     <label
                       htmlFor="itemName"
-                      className="block text-sm font-semibold text-gray-700"
+                      className="block text-sm font-semibold text-white"
                     >
                       <Tag size={16} className="inline text-blue-600 mr-2" />
                       Nama Item
@@ -498,7 +498,7 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setItemName(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base placeholder:text-gray-400"
+                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base placeholder:text-gray-400/50"
                       required
                     />
                   </div>
@@ -506,7 +506,7 @@ const InventarisCode: React.FC = () => {
                   <div className="space-y-1.5">
                     <label
                       htmlFor="itemCategory"
-                      className="block text-sm font-semibold text-gray-700"
+                      className="block text-sm font-semibold text-white"
                     >
                       <FolderOpen
                         size={16}
@@ -520,7 +520,7 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                         setItemCategory(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base appearance-none cursor-pointer"
+                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base appearance-none cursor-pointer"
                     >
                       <option value="ELC">📱 Elektronik</option>
                       <option value="FUR">🪑 Furnitur</option>
@@ -540,7 +540,7 @@ const InventarisCode: React.FC = () => {
                   <div className="space-y-1.5">
                     <label
                       htmlFor="itemLocation"
-                      className="block text-sm font-semibold text-gray-700"
+                      className="block text-sm font-semibold text-white"
                     >
                       <MapPin size={16} className="inline text-blue-600 mr-2" />
                       Lokasi
@@ -553,14 +553,14 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setItemLocation(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base placeholder:text-gray-400"
+                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base placeholder:text-gray-400/50"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label
                       htmlFor="itemPrefix"
-                      className="block text-sm font-semibold text-gray-700"
+                      className="block text-sm font-semibold text-white"
                     >
                       <Pen size={16} className="inline text-blue-600 mr-2" />
                       Awalan Kode
@@ -586,7 +586,7 @@ const InventarisCode: React.FC = () => {
                   <div className="space-y-1.5">
                     <label
                       htmlFor="quantity"
-                      className="block text-sm font-semibold text-gray-700"
+                      className="block text-sm font-semibold text-white"
                     >
                       <Package
                         size={16}
@@ -602,7 +602,7 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setQuantity(Math.max(1, parseInt(e.target.value) || 1))
                       }
-                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base"
+                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base"
                     />
                   </div>
 
@@ -610,7 +610,7 @@ const InventarisCode: React.FC = () => {
                   <div className="space-y-1.5">
                     <label
                       htmlFor="status"
-                      className="block text-sm font-semibold text-gray-700"
+                      className="block text-sm font-semibold text-white"
                     >
                       <AlertCircle
                         size={16}
@@ -624,7 +624,7 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                         setStatus(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base appearance-none cursor-pointer"
+                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base appearance-none cursor-pointer"
                     >
                       <option value="Tersedia">✅ Tersedia</option>
                       <option value="Dipinjam">📤 Dipinjam</option>
@@ -637,7 +637,7 @@ const InventarisCode: React.FC = () => {
                   <div className="col-span-1 md:col-span-2 space-y-1.5">
                     <label
                       htmlFor="notes"
-                      className="block text-sm font-semibold text-gray-700"
+                      className="block text-sm font-semibold text-white"
                     >
                       <FileText
                         size={16}
@@ -653,23 +653,23 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                         setNotes(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base placeholder:text-gray-400 resize-y min-h-[60px]"
+                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base placeholder:text-gray-400/50 resize-y min-h-[60px]"
                     />
                   </div>
                 </div>
 
                 {/* Code Display */}
-                <div className="mt-6 p-4 sm:p-5 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/80 rounded-2xl border-2 border-blue-200/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="mt-6 p-4 sm:p-5 bg-[#23305d] rounded-2xl border-2 border-[#43424e] flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-600/10 p-2 rounded-xl">
                       <QrCode size={20} className="text-blue-600" />
                     </div>
-                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
                       Kode Generated
                     </span>
                   </div>
                   <div className="flex-1 text-center">
-                    <span className="text-2xl sm:text-3xl lg:text-4xl font-mono font-bold bg-white/60 backdrop-blur-sm px-5 py-2 rounded-xl text-gray-800 tracking-wider inline-block shadow-sm border border-white/80">
+                    <span className="text-2xl sm:text-3xl lg:text-4xl font-mono font-bold bg-[#1d2950] px-5 py-2 rounded-xl text-[#d9ab3f] tracking-wider inline-block shadow-sm border border-[#43424e]">
                       {generatedCode}
                     </span>
                   </div>
@@ -679,8 +679,8 @@ const InventarisCode: React.FC = () => {
                       onClick={() => copyToClipboard(generatedCode)}
                       className={`p-3 rounded-xl transition-all duration-200 ${
                         isCopied
-                          ? "bg-emerald-500 text-white"
-                          : "bg-white/70 hover:bg-blue-100/70 text-gray-700 hover:text-blue-700"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-[#1d2950] hover:bg-[#d9ab3f]/10 text-[#d9ab3f] hover:text-[#d9ab3f] border border-[#43424e]"
                       } shadow-sm hover:shadow-md`}
                       title="Salin kode"
                     >
@@ -693,7 +693,7 @@ const InventarisCode: React.FC = () => {
                     <button
                       type="button"
                       onClick={updateGeneratedCode}
-                      className="p-3 bg-white/70 hover:bg-blue-100/70 rounded-xl transition-all duration-200 text-gray-700 hover:text-blue-700 shadow-sm hover:shadow-md"
+                      className="p-3 bg-[#1d2950] hover:bg-[#d9ab3f]/10 border border-[#43424e] rounded-xl transition-all duration-200 text-[#d9ab3f] hover:text-[#d9ab3f] shadow-sm hover:shadow-md"
                       title="Refresh kode"
                     >
                       <RotateCw size={20} />
@@ -705,7 +705,7 @@ const InventarisCode: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-3 mt-6">
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 text-base"
+                    className="flex-1 bg-gradient-to-r from-[#d9ab3f] to-[#af9151] hover:from-[#e3b84b] hover:to-[#be9f5c] text-[#121833] font-bold py-3.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 text-base"
                   >
                     <PlusCircle size={20} />
                     Generate & Simpan
@@ -713,7 +713,7 @@ const InventarisCode: React.FC = () => {
                   <button
                     type="button"
                     onClick={updateGeneratedCode}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
+                    className="flex-1 bg-[#1d2950] hover:bg-[#d9ab3f]/10 border border-[#43424e] text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
                   >
                     <RotateCw size={20} />
                     Generate Ulang
@@ -721,7 +721,7 @@ const InventarisCode: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
+                    className="flex-1 bg-[#1d2950] hover:bg-[#d9ab3f]/10 border border-[#43424e] text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
                   >
                     <Undo size={20} />
                     Reset
@@ -730,18 +730,18 @@ const InventarisCode: React.FC = () => {
               </form>
 
               {/* History */}
-              <div className="mt-10 pt-6 border-t-2 border-gray-200/70">
+              <div className="mt-10 pt-6 border-t-2 border-[#43424e]">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2.5">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2.5">
                     <div className="bg-blue-600/10 p-2 rounded-xl">
                       <List size={18} className="text-blue-600" />
                     </div>
                     Riwayat Kode
                   </h3>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-1.5 bg-gray-100/80 px-3.5 py-1.5 rounded-full">
+                    <div className="flex items-center gap-1.5 bg-[#1d2950] border border-[#43424e] px-3.5 py-1.5 rounded-full">
                       <Clock size={14} className="text-gray-500" />
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-[#af9151]">
                         {history.length} item
                       </span>
                     </div>
@@ -757,36 +757,36 @@ const InventarisCode: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="border border-[#43424e] rounded-2xl overflow-hidden shadow-sm">
                   <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-sm">
+                      <thead className="bg-[#23305d] sticky top-0 z-10 backdrop-blur-sm">
                         <tr>
-                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
                             Kode
                           </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
                             Item
                           </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
                             Kategori
                           </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
                             Lokasi
                           </th>
-                          <th className="py-3.5 px-4 text-center font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                          <th className="py-3.5 px-4 text-center font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
                             Jml
                           </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
                             Status
                           </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-gray-600 text-xs uppercase tracking-wider border-b border-gray-200">
+                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
                             Keterangan
                           </th>
-                          <th className="py-3.5 px-4 border-b border-gray-200 w-12"></th>
+                          <th className="py-3.5 px-4 border-b border-[#43424e] w-12"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100/50">
+                      <tbody className="divide-y divide-[#43424e]/50 bg-[#121833]/30">
                         {renderHistoryRows()}
                       </tbody>
                     </table>
@@ -797,7 +797,7 @@ const InventarisCode: React.FC = () => {
                   <button
                     type="button"
                     onClick={clearHistory}
-                    className="text-sm text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2"
+                    className="text-sm text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-xl border border-red-500/20 transition-all duration-200 flex items-center gap-2"
                   >
                     <Trash2 size={16} />
                     Hapus semua

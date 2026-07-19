@@ -1,150 +1,513 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Calendar, ChevronDown, CheckCircle, XCircle, AlertCircle, Clock, Download, Users, UserCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Calendar,
+  ChevronDown,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Clock,
+  Download,
+  Users,
+  UserCheck,
+  QrCode,
+  Search,
+  Scan,
+  Maximize2,
+  Minimize2,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  CreditCard,
+  UserPlus
+} from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-const COLORS = {
-  primary: "#23305d",
-  secondary: "#43424e",
-  accent: "#d9ab3f",
-  grayMedium: "#e9ecef",
-  grayLight: "#f8f9fa",
-};
+interface AttendanceRecord {
+  id: string;
+  nama: string;
+  nis: string;
+  kelas: string;
+  status: "Hadir" | "Sakit" | "Izin" | "Alpa";
+  jamMasuk: string;
+  keterangan: string;
+  scanMethod?: "QR Card" | "Manual";
+}
 
-const MOCK_ATTENDANCE = [
-  { id: "1", nama: "Ahmad Rizki Pratama", nis: "2023001", status: "Hadir", jamMasuk: "06:45", keterangan: "-" },
-  { id: "2", nama: "Siti Nurhaliza", nis: "2023002", status: "Sakit", jamMasuk: "-", keterangan: "Surat Dokter" },
-  { id: "3", nama: "Budi Setiawan", nis: "2022015", status: "Hadir", jamMasuk: "06:50", keterangan: "-" },
-  { id: "4", nama: "Dewi Anggraeni", nis: "2021042", status: "Izin", jamMasuk: "-", keterangan: "Acara Keluarga" },
-  { id: "5", nama: "Rizki Fadilah", nis: "2020089", status: "Alpa", jamMasuk: "-", keterangan: "Tanpa Keterangan" },
+const INITIAL_ATTENDANCE: AttendanceRecord[] = [
+  { id: "1", nama: "Ahmad Rizki Pratama", nis: "2023001", kelas: "X-1", status: "Hadir", jamMasuk: "06:45", keterangan: "-", scanMethod: "QR Card" },
+  { id: "2", nama: "Siti Nurhaliza", nis: "2023002", kelas: "X-1", status: "Sakit", jamMasuk: "-", keterangan: "Surat Dokter" },
+  { id: "3", nama: "Budi Setiawan", nis: "2022015", kelas: "X-1", status: "Hadir", jamMasuk: "06:50", keterangan: "-", scanMethod: "QR Card" },
+  { id: "4", nama: "Dewi Anggraeni", nis: "2021042", kelas: "X-2", status: "Izin", jamMasuk: "-", keterangan: "Acara Keluarga" },
+  { id: "5", nama: "Rizki Fadilah", nis: "2020089", kelas: "X-2", status: "Alpa", jamMasuk: "-", keterangan: "Tanpa Keterangan" },
 ];
 
 export const AttendanceManagementDashboard = () => {
-  const [selectedKelas, setSelectedKelas] = useState("X-1");
+  const [selectedKelas, setSelectedKelas] = useState("All");
+  const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [qrCodeInput, setQrCodeInput] = useState("");
+  const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+
   const today = format(new Date(), "EEEE, dd MMMM yyyy", { locale: id });
 
+  // Scan simulation helper
+  const handleScanCard = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!qrCodeInput.trim()) return;
+
+    // Search in student database (mocking a check)
+    const mockStudentDatabase = [
+      { nis: "2023001", nama: "Ahmad Rizki Pratama", kelas: "X-1" },
+      { nis: "2023002", nama: "Siti Nurhaliza", kelas: "X-1" },
+      { nis: "2022015", nama: "Budi Setiawan", kelas: "X-1" },
+      { nis: "2021042", nama: "Dewi Anggraeni", kelas: "X-2" },
+      { nis: "2020089", nama: "Rizki Fadilah", kelas: "X-2" },
+      { nis: "2023005", nama: "Clara Salsabila", kelas: "X-1" },
+      { nis: "2023006", nama: "Farhan Ardiansyah", kelas: "X-2" },
+      { nis: "2023007", nama: "Gaby Anastasia", kelas: "X-1" }
+    ];
+
+    const student = mockStudentDatabase.find(s => s.nis === qrCodeInput.trim() || s.nama.toLowerCase().includes(qrCodeInput.toLowerCase()));
+
+    if (student) {
+      // Play beep sound if enabled
+      if (isSoundEnabled) {
+        try {
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Beep frequency
+          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 0.15);
+        } catch (_) {}
+      }
+
+      // Check if already scanned today
+      const alreadyScanned = attendanceList.find(a => a.nis === student.nis && a.status === "Hadir");
+
+      if (alreadyScanned) {
+        setScanResult({
+          success: false,
+          message: `${student.nama} (${student.nis}) sudah tercatat hadir jam ${alreadyScanned.jamMasuk}.`
+        });
+      } else {
+        const jamSekarang = format(new Date(), "HH:mm");
+        const newRecord: AttendanceRecord = {
+          id: String(attendanceList.length + 1),
+          nama: student.nama,
+          nis: student.nis,
+          kelas: student.kelas,
+          status: "Hadir",
+          jamMasuk: jamSekarang,
+          keterangan: "-",
+          scanMethod: "QR Card"
+        };
+
+        // If student exists but had a different status, update them, otherwise append
+        const existsIndex = attendanceList.findIndex(a => a.nis === student.nis);
+        if (existsIndex >= 0) {
+          const updated = [...attendanceList];
+          updated[existsIndex] = newRecord;
+          setAttendanceList(updated);
+        } else {
+          setAttendanceList([newRecord, ...attendanceList]);
+        }
+
+        setScanResult({
+          success: true,
+          message: `Berhasil! Kartu ${student.nama} (${student.nis}) terverifikasi. Masuk jam ${jamSekarang}.`
+        });
+      }
+    } else {
+      setScanResult({
+        success: false,
+        message: "Gagal! Kode QR kartu siswa tidak terdaftar di database Golden Gate."
+      });
+    }
+
+    setQrCodeInput("");
+    setTimeout(() => setScanResult(null), 4000);
+  };
+
   const getStatusBadge = (status: string) => {
-    switch(status) {
-      case "Hadir": return <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200"><CheckCircle size={12}/> Hadir</span>;
-      case "Sakit": return <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200"><AlertCircle size={12}/> Sakit</span>;
-      case "Izin": return <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200"><AlertCircle size={12}/> Izin</span>;
-      case "Alpa": return <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200"><XCircle size={12}/> Alpa</span>;
-      default: return null;
+    switch (status) {
+      case "Hadir":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <CheckCircle size={12} /> Hadir
+          </span>
+        );
+      case "Sakit":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+            <AlertCircle size={12} /> Sakit
+          </span>
+        );
+      case "Izin":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            <AlertCircle size={12} /> Izin
+          </span>
+        );
+      case "Alpa":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30">
+            <XCircle size={12} /> Alpa
+          </span>
+        );
+      default:
+        return null;
     }
   };
 
+  const changeStatus = (id: string, newStatus: "Hadir" | "Sakit" | "Izin" | "Alpa") => {
+    setAttendanceList(
+      attendanceList.map((item) => {
+        if (item.id === id) {
+          return {
+            ...item,
+            status: newStatus,
+            jamMasuk: newStatus === "Hadir" ? format(new Date(), "HH:mm") : "-",
+            scanMethod: newStatus === "Hadir" ? "Manual" : undefined
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const filteredAttendance = attendanceList.filter((item) => {
+    const matchesKelas = selectedKelas === "All" || item.kelas === selectedKelas;
+    const matchesSearch =
+      item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.nis.includes(searchQuery);
+    return matchesKelas && matchesSearch;
+  });
+
+  const totalSiswa = filteredAttendance.length;
+  const totalHadir = filteredAttendance.filter((a) => a.status === "Hadir").length;
+  const totalSakitIzin = filteredAttendance.filter((a) => a.status === "Sakit" || a.status === "Izin").length;
+  const totalAlpa = filteredAttendance.filter((a) => a.status === "Alpa").length;
+
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-12 text-white">
+      {/* Title Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: COLORS.primary }}>Absensi Siswa</h1>
-          <p className="text-sm" style={{ color: COLORS.secondary }}>Kelola dan pantau kehadiran siswa setiap hari.</p>
+          <h1 className="text-2xl font-bold text-white">Absensi & QR Scan Kartu Siswa</h1>
+          <p className="text-sm text-slate-400">
+            Sistem absensi terintegrasi kartu siswa digital berbasis scan QR Code guru kelas.
+          </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors shadow-sm text-sm font-medium" style={{ borderColor: COLORS.grayMedium, color: COLORS.primary }}>
-            <Download size={16} /> Export Rekap
+          <button
+            onClick={() => setIsScanning(!isScanning)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+              isScanning
+                ? "bg-red-500/20 border-red-500 text-red-300"
+                : "bg-[#d9ab3f] text-[#23305d] border-[#d9ab3f] hover:scale-[1.02]"
+            }`}
+          >
+            <QrCode size={18} />
+            {isScanning ? "Tutup Mode Scan" : "Mulai Scan Kartu Siswa"}
+          </button>
+          <button
+            onClick={() => alert("Mengunduh Rekapitulasi Absensi...")}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#1d2950] border border-[#43424e] rounded-xl hover:bg-[#d9ab3f]/10 text-white transition-all text-sm font-semibold"
+          >
+            <Download size={18} /> Export Rekap
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl p-5 border shadow-sm" style={{ borderColor: COLORS.grayMedium }}>
-           <div className="flex justify-between items-center mb-2">
-             <span className="text-sm font-medium" style={{ color: COLORS.secondary }}>Total Siswa</span>
-             <Users className="text-gray-400" size={18} />
-           </div>
-           <h3 className="text-2xl font-bold" style={{ color: COLORS.primary }}>36</h3>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-xl p-5 border shadow-sm" style={{ borderColor: COLORS.grayMedium }}>
-           <div className="flex justify-between items-center mb-2">
-             <span className="text-sm font-medium" style={{ color: COLORS.secondary }}>Hadir</span>
-             <UserCheck className="text-green-500" size={18} />
-           </div>
-           <h3 className="text-2xl font-bold text-green-600">32</h3>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-xl p-5 border shadow-sm" style={{ borderColor: COLORS.grayMedium }}>
-           <div className="flex justify-between items-center mb-2">
-             <span className="text-sm font-medium" style={{ color: COLORS.secondary }}>Sakit / Izin</span>
-             <AlertCircle className="text-orange-500" size={18} />
-           </div>
-           <h3 className="text-2xl font-bold text-orange-600">3</h3>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white rounded-xl p-5 border shadow-sm" style={{ borderColor: COLORS.grayMedium }}>
-           <div className="flex justify-between items-center mb-2">
-             <span className="text-sm font-medium" style={{ color: COLORS.secondary }}>Alpa</span>
-             <XCircle className="text-red-500" size={18} />
-           </div>
-           <h3 className="text-2xl font-bold text-red-600">1</h3>
-        </motion.div>
+      {/* QR Scanner Mode Widget */}
+      <AnimatePresence>
+        {isScanning && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-[#1a2347]/80 backdrop-blur-xl rounded-3xl border border-[#43424e] p-6">
+              {/* Left Column: Viewfinder Simulation */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="relative bg-[#121833] aspect-video sm:aspect-[21/9] lg:aspect-video rounded-2xl overflow-hidden border border-[#43424e]/80 flex flex-col items-center justify-center">
+                  {/* Scanner overlay */}
+                  <div className="absolute inset-0 border-2 border-dashed border-[#d9ab3f]/30 m-4 rounded-xl flex items-center justify-center">
+                    {/* Laser Line */}
+                    <div className="w-full h-0.5 bg-[#d9ab3f] absolute animate-pulse shadow-[0_0_8px_#d9ab3f]" style={{
+                      animation: "scanLine 2.5s infinite ease-in-out"
+                    }} />
+
+                    {/* Corner Reticles */}
+                    <div className="absolute top-2 left-2 w-6 h-6 border-t-4 border-l-4 border-[#d9ab3f] rounded-tl-md" />
+                    <div className="absolute top-2 right-2 w-6 h-6 border-t-4 border-r-4 border-[#d9ab3f] rounded-tr-md" />
+                    <div className="absolute bottom-2 left-2 w-6 h-6 border-b-4 border-l-4 border-[#d9ab3f] rounded-bl-md" />
+                    <div className="absolute bottom-2 right-2 w-6 h-6 border-b-4 border-r-4 border-[#d9ab3f] rounded-br-md" />
+                  </div>
+
+                  {/* Finder HUD */}
+                  <div className="absolute top-6 right-6 flex gap-2">
+                    <button 
+                      onClick={() => setIsSoundEnabled(!isSoundEnabled)} 
+                      className="p-2 bg-black/40 rounded-lg text-white hover:bg-black/60 transition-all"
+                    >
+                      {isSoundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                    </button>
+                    <span className="px-3 py-1 bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] font-mono uppercase tracking-wider rounded-md animate-pulse">
+                      CAM Viewfinder
+                    </span>
+                  </div>
+
+                  <div className="text-center z-10 p-4">
+                    <Scan size={44} className="text-[#d9ab3f]/60 mx-auto mb-2 animate-bounce" />
+                    <p className="text-sm font-semibold text-white">Letakkan QR Code Kartu di Depan Kamera</p>
+                    <p className="text-xs text-slate-400 mt-1">Sistem akan memverifikasi dan mencatat waktu masuk siswa secara otomatis</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: QR input & Scan result */}
+              <div className="space-y-4 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <CreditCard size={18} className="text-[#d9ab3f]" />
+                    Pencatatan Kehadiran Siswa
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Gunakan scanner kamera atau masukkan NIS siswa secara manual jika kamera tidak mendeteksi kode QR.
+                  </p>
+                </div>
+
+                {/* Scan Result Feedback */}
+                <div className="flex-1 my-4 flex items-center">
+                  <AnimatePresence mode="wait">
+                    {scanResult ? (
+                      <motion.div
+                        key={scanResult.message}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={`w-full p-4 rounded-xl border flex gap-3 items-start ${
+                          scanResult.success
+                            ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+                            : "bg-red-500/20 border-red-500/30 text-red-300"
+                        }`}
+                      >
+                        {scanResult.success ? <CheckCircle size={20} className="flex-shrink-0" /> : <XCircle size={20} className="flex-shrink-0" />}
+                        <div>
+                          <p className="text-xs uppercase font-bold tracking-wider">
+                            {scanResult.success ? "Scan Sukses" : "Scan Gagal / Peringatan"}
+                          </p>
+                          <p className="text-xs sm:text-sm font-medium mt-1">
+                            {scanResult.message}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="w-full p-4 rounded-xl border border-dashed border-[#43424e] text-center text-xs text-slate-400">
+                        <Sparkles size={16} className="mx-auto mb-1.5 text-slate-500" />
+                        Belum ada kartu siswa yang ter-scan.
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Manual NIS Form */}
+                <form onSubmit={handleScanCard} className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Input NIS atau Nama Siswa
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Masukkan NIS (contoh: 2023001)"
+                      value={qrCodeInput}
+                      onChange={(e) => setQrCodeInput(e.target.value)}
+                      className="w-full px-4 py-3 bg-[#1d2950] text-white border border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:outline-none text-sm placeholder:text-slate-400/40"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-[#d9ab3f] text-[#23305d] font-bold rounded-xl text-sm transition-all hover:scale-[1.01]"
+                  >
+                    Submit Absensi
+                  </button>
+                </form>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Siswa</span>
+            <Users className="text-slate-400" size={18} />
+          </div>
+          <h3 className="text-2xl font-bold text-white">{totalSiswa}</h3>
+        </div>
+        <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-medium">Hadir</span>
+            <UserCheck className="text-emerald-400" size={18} />
+          </div>
+          <h3 className="text-2xl font-bold text-emerald-400">{totalHadir}</h3>
+        </div>
+        <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Sakit / Izin</span>
+            <AlertCircle className="text-amber-400" size={18} />
+          </div>
+          <h3 className="text-2xl font-bold text-amber-400">{totalSakitIzin}</h3>
+        </div>
+        <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Alpa</span>
+            <XCircle className="text-red-400" size={18} />
+          </div>
+          <h3 className="text-2xl font-bold text-red-400">{totalAlpa}</h3>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 border shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center" style={{ borderColor: COLORS.grayMedium }}>
+      {/* Date Header & Filter Container */}
+      <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl p-4 border border-[#43424e] flex flex-col md:flex-row gap-4 justify-between items-center">
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Calendar size={18} style={{ color: COLORS.accent }} />
-          <span className="font-semibold" style={{ color: COLORS.primary }}>{today}</span>
+          <Calendar size={18} className="text-[#d9ab3f]" />
+          <span className="font-semibold text-white">{today}</span>
         </div>
-        <div className="flex gap-3 w-full md:w-auto items-center">
-          <span className="text-sm font-medium" style={{ color: COLORS.secondary }}>Filter Kelas:</span>
-          <div className="relative w-full md:w-48">
-            <select 
-              className="w-full appearance-none pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#d9ab3f]/50 bg-white"
-              style={{ borderColor: COLORS.grayMedium, color: COLORS.primary, fontWeight: 600 }}
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-stretch sm:items-center">
+          {/* Search Box */}
+          <div className="relative flex-1 sm:w-64 bg-[#1d2950] border border-[#43424e] rounded-lg px-3 py-1.5 flex items-center gap-2">
+            <Search size={16} className="text-slate-400" />
+            <input
+              type="text"
+              placeholder="Cari siswa/NIS..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none text-xs text-white placeholder-slate-400/50 focus:outline-none w-full"
+            />
+          </div>
+
+          {/* Class Filter */}
+          <div className="flex items-center gap-2 bg-[#1d2950] border border-[#43424e] px-3 py-1.5 rounded-lg">
+            <span className="text-xs font-medium text-slate-300 whitespace-nowrap">Filter Kelas:</span>
+            <select
+              className="appearance-none bg-transparent border-none focus:outline-none text-xs font-bold text-[#d9ab3f] cursor-pointer pr-4"
               value={selectedKelas}
               onChange={(e) => setSelectedKelas(e.target.value)}
             >
-              <option value="X-1">X-1 (IPA)</option>
-              <option value="X-2">X-2 (IPS)</option>
+              <option value="All" className="bg-[#1a2347]">Semua Kelas</option>
+              <option value="X-1" className="bg-[#1a2347]">X-1 (IPA)</option>
+              <option value="X-2" className="bg-[#1a2347]">X-2 (IPS)</option>
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl border shadow-sm overflow-hidden" style={{ borderColor: COLORS.grayMedium }}>
+      {/* Main Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#1a2347]/60 backdrop-blur-xl rounded-3xl border border-[#43424e] overflow-hidden"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr style={{ backgroundColor: COLORS.grayLight, borderBottom: `1px solid ${COLORS.grayMedium}` }}>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: COLORS.secondary }}>Nama Siswa</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: COLORS.secondary }}>NIS</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: COLORS.secondary }}>Status Kehadiran</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: COLORS.secondary }}>Jam Masuk</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: COLORS.secondary }}>Keterangan</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-right" style={{ color: COLORS.secondary }}>Aksi</th>
+              <tr className="bg-[#23305d] text-white uppercase tracking-wider text-xs border-b border-[#43424e]">
+                <th className="px-6 py-4">Nama Siswa</th>
+                <th className="px-6 py-4">NIS</th>
+                <th className="px-6 py-4">Kelas</th>
+                <th className="px-6 py-4">Status Kehadiran</th>
+                <th className="px-6 py-4">Jam Masuk</th>
+                <th className="px-6 py-4">Metode Absen</th>
+                <th className="px-6 py-4">Keterangan</th>
+                <th className="px-6 py-4 text-right">Ubah Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {MOCK_ATTENDANCE.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="font-medium text-gray-900">{item.nama}</p>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="text-sm text-gray-600">{item.nis}</p>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(item.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {item.jamMasuk !== "-" ? (
-                       <div className="flex items-center gap-2 text-sm text-gray-700">
-                         <Clock size={14} className="text-green-500" /> {item.jamMasuk}
-                       </div>
-                    ) : <span className="text-gray-400">-</span>}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {item.keterangan}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                     <button className="text-sm font-medium hover:underline" style={{ color: COLORS.accent }}>Ubah Status</button>
+            <tbody className="divide-y divide-[#43424e]/50 bg-[#121833]/20">
+              {filteredAttendance.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                    Tidak ada data absensi siswa yang cocok.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredAttendance.map((item) => (
+                  <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="font-semibold text-white">{item.nama}</p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-300">
+                      {item.nis}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#d9ab3f] text-xs">
+                      {item.kelas}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(item.status)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {item.jamMasuk !== "-" ? (
+                        <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
+                          <Clock size={12} className="text-emerald-400" /> {item.jamMasuk}
+                        </div>
+                      ) : (
+                        <span className="text-slate-500">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-400">
+                      {item.scanMethod ? (
+                        <span className="bg-slate-800 border border-slate-700/80 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                          {item.scanMethod}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-300">
+                      {item.keterangan}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-xs">
+                      <select
+                        value={item.status}
+                        onChange={(e) => changeStatus(item.id, e.target.value as any)}
+                        className="bg-[#1d2950] text-[#d9ab3f] border border-[#43424e] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#d9ab3f] cursor-pointer"
+                      >
+                        <option value="Hadir" className="bg-[#1a2347] text-emerald-400">Hadir</option>
+                        <option value="Sakit" className="bg-[#1a2347] text-blue-400">Sakit</option>
+                        <option value="Izin" className="bg-[#1a2347] text-amber-400">Izin</option>
+                        <option value="Alpa" className="bg-[#1a2347] text-red-400">Alpa</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </motion.div>
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes scanLine {
+          0% { top: 5%; }
+          50% { top: 95%; }
+          100% { top: 5%; }
+        }
+      `}</style>
     </div>
   );
 };

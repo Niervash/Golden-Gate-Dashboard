@@ -20,6 +20,7 @@ import ReportsPage from "../../pages/admin-tu/reports";
 import SettingsPage from "../../pages/admin-tu/settings";
 import PrincipalPage from "../../pages/principal";
 import LessonPlanPage from "../../pages/admin-tu/lesson-plan";
+import StudentCardsPage from "../../pages/admin-tu/student-cards";
 import { useAuth, type UserRole } from "../../context";
 
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -59,23 +60,10 @@ const DashboardIndex = () => {
 };
 
 const AdminRouters: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    setIsLoading(true);
-
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
 
   return (
     <>
-      <Preloader show={isLoading} />
-
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route index element={<DashboardIndex />} />
@@ -86,10 +74,11 @@ const AdminRouters: React.FC = () => {
           <Route path="lesson-plan" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><LessonPlanPage /></PageWrapper></RoleGuard>} />
           
           <Route path="students" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><StudentsPage /></PageWrapper></RoleGuard>} />
+          <Route path="student-cards" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><StudentCardsPage /></PageWrapper></RoleGuard>} />
           <Route path="teachers" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><TeachersPage /></PageWrapper></RoleGuard>} />
           <Route path="academic" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><AcademicPage /></PageWrapper></RoleGuard>} />
           <Route path="schedule" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><SchedulePage /></PageWrapper></RoleGuard>} />
-          <Route path="attendance" element={<RoleGuard allowedRoles={["admin", "guru"]}><PageWrapper><AttendancePage /></PageWrapper></RoleGuard>} />
+          <Route path="attendance" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><AttendancePage /></PageWrapper></RoleGuard>} />
           <Route path="grades" element={<RoleGuard allowedRoles={["admin", "guru"]}><PageWrapper><GradesPage /></PageWrapper></RoleGuard>} />
           <Route path="counseling" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><CounselingPage /></PageWrapper></RoleGuard>} />
           <Route path="achievements" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><AchievementsPage /></PageWrapper></RoleGuard>} />

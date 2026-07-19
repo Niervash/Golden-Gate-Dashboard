@@ -1,6 +1,6 @@
 import React from "react";
-import { Breadcrumb, Card, Layout, Menu, theme } from "antd";
-import { AdminHeader } from "../../components";
+import { Layout } from "antd";
+import { MainSidebar } from "../../components";
 import { AdminFooter } from "../../components/footer-dashboard";
 
 const { Content } = Layout;
@@ -11,16 +11,33 @@ interface props {
 
 const AdminLayout: React.FC<props> = ({ children }) => {
   return (
-    <Layout>
-      <AdminHeader />
-      <Content style={{ padding: "0 30px" }}>
-        <Breadcrumb
-          style={{ margin: "16px 0" }}
-          items={[{ title: "Home" }, { title: "List" }, { title: "App" }]}
-        />
-        {children}
-      </Content>
-      <AdminFooter />
+    <Layout
+      style={{ minHeight: "100vh", display: "flex", flexDirection: "row" }}
+    >
+      {/* Responsive Sidebar component */}
+      <MainSidebar />
+
+      {/* Main content container */}
+      <Layout
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          background: "transparent",
+          width: "100%",
+        }}
+      >
+        <Content
+          className="p-4 md:p-6 lg:p-8"
+          style={{
+            minHeight: "280px",
+            paddingTop: "72px", // Ensure space for mobile hamburger button
+          }}
+        >
+          {children}
+        </Content>
+        <AdminFooter />
+      </Layout>
     </Layout>
   );
 };

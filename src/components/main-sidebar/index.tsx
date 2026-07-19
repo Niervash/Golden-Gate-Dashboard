@@ -1,3 +1,4 @@
-import MainSibdebar from "./default";
+import MainSidebar from "./default";
 
-export { MainSibdebar };
+export { MainSidebar };
+
