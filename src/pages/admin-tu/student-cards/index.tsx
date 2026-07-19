@@ -97,10 +97,10 @@ const StudentCardsGeneratorPage: React.FC = () => {
               Lainnya • Pembuat Kartu & QR
             </span>
             <h1 className="text-xl sm:text-2xl font-bold mt-2 text-white">
-              Cetak Kartu Tanda Siswa (KTS)
+              Cetak QR Code Absensi Siswa
             </h1>
             <p className="text-sm" style={{ color: "#af9151" }}>
-              Generate QR Code absensi dan cetak kartu identitas siswa Golden Gate School secara instan.
+              Generate QR Code absensi secara instan untuk di-scan oleh kamera absensi.
             </p>
           </div>
         </div>
@@ -249,92 +249,59 @@ const StudentCardsGeneratorPage: React.FC = () => {
             <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-3xl border border-[#43424e] p-6 sm:p-8 flex flex-col items-center justify-center">
               
               <h3 className="font-bold text-sm text-slate-300 uppercase tracking-wider self-start mb-6 flex items-center gap-2">
-                <CreditCard size={16} className="text-[#d9ab3f]" />
-                Pratinjau Kartu Tanda Siswa
+                <QrCode size={16} className="text-[#d9ab3f]" />
+                Pratinjau QR Code Siswa
               </h3>
 
-              {/* Physical Card Layout */}
+              {/* QR Code Layout */}
               <div 
                 id="printable-student-card"
-                className="w-full max-w-md aspect-[1.58/1] rounded-2xl overflow-hidden shadow-2xl relative border-2 border-[#d9ab3f]/40 flex flex-col justify-between text-white"
+                className="w-full max-w-sm aspect-square rounded-2xl overflow-hidden shadow-2xl relative border-2 border-[#d9ab3f]/40 flex flex-col justify-between items-center p-6 text-white"
                 style={{
                   background: "linear-gradient(135deg, #23305d 0%, #151e3d 100%)",
                 }}
               >
                 {/* Gold corner ornaments */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#d9ab3f]/5 rounded-bl-full pointer-events-none" />
+                <div className="absolute top-0 right-0 w-20 h-20 bg-[#d9ab3f]/5 rounded-bl-full pointer-events-none" />
 
-                {/* Card Header */}
-                <div className="p-3 sm:p-4 border-b border-[#d9ab3f]/20 flex items-center gap-3 bg-black/10">
-                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-[#d9ab3f]/30">
-                    <span className="text-[10px] font-bold text-[#d9ab3f]">GGS</span>
-                  </div>
-                  <div>
-                    <h2 className="text-[11px] sm:text-xs font-bold tracking-wider leading-none text-white">GOLDEN GATE SCHOOL</h2>
-                    <p className="text-[7px] sm:text-[8px] text-[#af9151] mt-0.5 font-semibold tracking-widest uppercase">Student Identity Card</p>
-                  </div>
+                {/* Header */}
+                <div className="text-center w-full pb-3 border-b border-[#d9ab3f]/20">
+                  <h2 className="text-xs font-bold tracking-wider leading-none text-white">GOLDEN GATE SCHOOL</h2>
+                  <p className="text-[8px] text-[#af9151] mt-1 font-semibold tracking-widest uppercase">Absensi QR Code Siswa</p>
                 </div>
 
-                {/* Card Body */}
-                <div className="p-4 flex gap-4 items-center flex-1">
-                  
-                  {/* Photo Profile */}
-                  <div className="w-20 h-24 bg-slate-800 rounded-lg overflow-hidden border border-[#d9ab3f]/30 shadow-md flex-shrink-0">
-                    <img 
-                      src={selectedStudent.photoUrl} 
-                      alt={selectedStudent.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Student Details */}
-                  <div className="flex-1 space-y-1.5 min-w-0">
-                    <div>
-                      <p className="text-[7px] text-[#af9151] uppercase font-bold tracking-wider">Nama Lengkap</p>
-                      <p className="text-[11px] sm:text-xs font-bold text-white truncate">{selectedStudent.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-[7px] text-[#af9151] uppercase font-bold tracking-wider">Nomor Induk Siswa (NIS)</p>
-                      <p className="text-[10px] sm:text-[11px] font-mono font-bold text-white">{selectedStudent.nis}</p>
-                    </div>
-                    <div>
-                      <p className="text-[7px] text-[#af9151] uppercase font-bold tracking-wider">Kelas Aktif</p>
-                      <p className="text-[10px] font-bold text-white">{selectedStudent.class}</p>
-                    </div>
-                  </div>
-
-                  {/* Generated QR Code */}
-                  <div className="w-20 h-20 bg-white p-1 rounded-lg border border-[#d9ab3f]/30 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <img 
-                      src={getQrUrl(selectedStudent.nis)} 
-                      alt="Student QR Code"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
+                {/* Generated QR Code */}
+                <div className="my-6 w-44 h-44 bg-white p-3 rounded-2xl border-2 border-[#d9ab3f]/30 flex items-center justify-center shadow-lg">
+                  <img 
+                    src={getQrUrl(selectedStudent.nis)} 
+                    alt="Student QR Code"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
 
-                {/* Card Footer */}
-                <div className="p-2 bg-[#d9ab3f] text-[#23305d] flex justify-between items-center text-[7px] font-bold tracking-wider px-4">
-                  <span>UNGGUL • BERKARAKTER • BERPRESTASI</span>
-                  <span>TA. 2026/2027</span>
+                {/* Student Details */}
+                <div className="text-center space-y-1 w-full bg-black/10 p-3 rounded-xl border border-white/5">
+                  <p className="text-[9px] text-[#af9151] uppercase font-bold tracking-wider leading-none">Nama Siswa</p>
+                  <p className="text-sm font-bold text-white leading-tight">{selectedStudent.name}</p>
+                  <p className="text-xs font-mono font-medium text-slate-300 mt-1">NIS: {selectedStudent.nis} • Kelas: {selectedStudent.class}</p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="w-full max-w-md grid grid-cols-2 gap-3 mt-6">
+              <div className="w-full max-w-sm grid grid-cols-2 gap-3 mt-6">
                 <button
                   onClick={handlePrint}
                   className="py-3 bg-[#d9ab3f] text-[#23305d] font-bold rounded-xl text-xs transition-all hover:scale-[1.01] flex items-center justify-center gap-2"
                 >
                   <Printer size={16} />
-                  Cetak Kartu Siswa
+                  Cetak QR Code
                 </button>
                 <button
-                  onClick={() => alert(`Mengunduh berkas gambar Kartu_${selectedStudent.name}.png...`)}
+                  onClick={() => alert(`Mengunduh berkas gambar QR_${selectedStudent.name}.png...`)}
                   className="py-3 bg-[#1d2950] border border-[#43424e] text-white font-semibold rounded-xl text-xs transition-all hover:bg-white/5 flex items-center justify-center gap-2"
                 >
                   <Download size={16} />
-                  Simpan Gambar PNG
+                  Simpan QR (PNG)
                 </button>
               </div>
 

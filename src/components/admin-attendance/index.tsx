@@ -323,7 +323,7 @@ export const AttendanceManagementDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-[#1a2347]/80 backdrop-blur-xl rounded-3xl border border-[#43424e] p-6">
               {/* Left Column: Viewfinder Simulation */}
               <div className="lg:col-span-2 space-y-4">
-                <div className="relative bg-[#121833] aspect-video w-full rounded-2xl overflow-hidden border border-[#43424e]/80 flex flex-col items-center justify-center">
+                <div className="relative bg-[#121833] w-full h-[380px] sm:h-[450px] lg:aspect-video rounded-2xl overflow-hidden border border-[#43424e]/80 flex flex-col items-center justify-center">
                   
                   {/* Camera view element */}
                   {!hasCameraError ? (
