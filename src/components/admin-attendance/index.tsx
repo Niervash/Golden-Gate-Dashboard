@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { Html5Qrcode } from "html5-qrcode";
+import { useStudents } from "../../context/student-context";
 import {
   Calendar,
-  ChevronDown,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -13,74 +16,47 @@ import {
   QrCode,
   Search,
   Scan,
-  Maximize2,
-  Minimize2,
   Sparkles,
   Volume2,
   VolumeX,
   CreditCard,
-  UserPlus,
+  RefreshCw,
+  Database,
 } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
-import { Html5Qrcode } from "html5-qrcode";
 
 interface AttendanceRecord {
   id: string;
   nama: string;
   nis: string;
   kelas: string;
-  status: "Hadir" | "Sakit" | "Izin" | "Alpa";
+  status: "Hadir" | "Sakit" | "Izin" | "Alpa" | "Belum";
   jamMasuk: string;
   keterangan: string;
   scanMethod?: "QR Card" | "Manual";
 }
 
-const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  {
-    id: "1",
-    nama: "Ahmad Rizki Pratama",
-    nis: "2023001",
-    kelas: "X-1",
-    status: "Hadir",
-    jamMasuk: "06:45",
-    keterangan: "-",
-    scanMethod: "QR Card",
-  },
-  {
-    id: "2",
-    nama: "Siti Nurhaliza",
-    nis: "2023002",
-    kelas: "X-1",
-    status: "Sakit",
-    jamMasuk: "-",
-    keterangan: "Surat Dokter",
-  },
-  {
-    id: "3",
-    nama: "Budi Setiawan",
-    nis: "2022015",
-    kelas: "X-1",
-    status: "Hadir",
-    jamMasuk: "06:50",
-    keterangan: "-",
-    scanMethod: "QR Card",
-  },
-  {
-    id: "4",
-    nama: "Dewi Anggraeni",
-    nis: "2021042",
-    kelas: "X-2",
-    status: "Izin",
-    jamMasuk: "-",
-    keterangan: "Acara Keluarga",
-  },
-];
+// LocalStorage key for today's attendance
+const getTodayKey = () =>
+  `ggs_attendance_${format(new Date(), "yyyy-MM-dd")}`;
+
+const loadTodayAttendance = (): AttendanceRecord[] => {
+  try {
+    const raw = localStorage.getItem(getTodayKey());
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveTodayAttendance = (records: AttendanceRecord[]) => {
+  localStorage.setItem(getTodayKey(), JSON.stringify(records));
+};
 
 export const AttendanceManagementDashboard = () => {
+  const { students, source, importFromGSheets, importStatus } = useStudents();
+
   const [selectedKelas, setSelectedKelas] = useState("All");
-  const [attendanceList, setAttendanceList] =
-    useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
+  const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [qrCodeInput, setQrCodeInput] = useState("");
@@ -102,7 +78,7 @@ export const AttendanceManagementDashboard = () => {
     canScanRef.current = canScan;
   }, [canScan]);
 
-  // Sync state with refs to avoid stale closures in camera callback
+  // Sync refs to avoid stale closures
   const isSoundEnabledRef = useRef(isSoundEnabled);
   useEffect(() => {
     isSoundEnabledRef.current = isSoundEnabled;
@@ -113,28 +89,63 @@ export const AttendanceManagementDashboard = () => {
     attendanceListRef.current = attendanceList;
   }, [attendanceList]);
 
+  const studentsRef = useRef(students);
+  useEffect(() => {
+    studentsRef.current = students;
+  }, [students]);
+
   const today = format(new Date(), "EEEE, dd MMMM yyyy", { locale: id });
 
-  // Main attendance processor
+  // ── Build attendance list from real students data ─────────────────────────
+  useEffect(() => {
+    if (students.length === 0) return;
+
+    const saved = loadTodayAttendance();
+    const savedNisMap = new Map(saved.map((r) => [r.nis, r]));
+
+    // Merge: semua siswa dari spreadsheet, pakai saved jika ada
+    const merged: AttendanceRecord[] = students.map((s) => {
+      if (savedNisMap.has(s.nis)) {
+        return savedNisMap.get(s.nis)!;
+      }
+      return {
+        id: s.id,
+        nama: s.namaLengkap,
+        nis: s.nis,
+        kelas: s.kelas,
+        status: "Belum",
+        jamMasuk: "-",
+        keterangan: "-",
+      };
+    });
+
+    setAttendanceList(merged);
+  }, [students]);
+
+  // Auto-save whenever attendance changes
+  useEffect(() => {
+    if (attendanceList.length > 0) {
+      saveTodayAttendance(attendanceList);
+    }
+  }, [attendanceList]);
+
+  // Dynamic class list from real data
+  const kelasList = useMemo(() => {
+    const set = new Set(students.map((s) => s.kelas).filter(Boolean));
+    return Array.from(set).sort();
+  }, [students]);
+
+  // ── Process QR attendance ──────────────────────────────────────────────────
   const processAttendance = (qrInput: string) => {
     if (!qrInput.trim()) return;
 
-    // Search in student database (mocking a check)
-    const mockStudentDatabase = [
-      { nis: "2023001", nama: "Ahmad Rizki Pratama", kelas: "X-1" },
-      { nis: "2023002", nama: "Siti Nurhaliza", kelas: "X-1" },
-      { nis: "2022015", nama: "Budi Setiawan", kelas: "X-1" },
-      { nis: "2021042", nama: "Dewi Anggraeni", kelas: "X-2" },
-      { nis: "2020089", nama: "Rizki Fadilah", kelas: "X-2" },
-      { nis: "2023005", nama: "Clara Salsabila", kelas: "X-1" },
-      { nis: "2023006", nama: "Farhan Ardiansyah", kelas: "X-2" },
-      { nis: "2023007", nama: "Gaby Anastasia", kelas: "X-1" },
-    ];
+    const trimmed = qrInput.trim();
 
-    const student = mockStudentDatabase.find(
+    // Search in REAL student database from context
+    const student = studentsRef.current.find(
       (s) =>
-        s.nis === qrInput.trim() ||
-        s.nama.toLowerCase().includes(qrInput.toLowerCase()),
+        s.nis === trimmed ||
+        s.namaLengkap.toLowerCase().includes(trimmed.toLowerCase())
     );
 
     if (student) {
@@ -149,7 +160,7 @@ export const AttendanceManagementDashboard = () => {
           oscillator.connect(gainNode);
           gainNode.connect(audioCtx.destination);
           oscillator.type = "sine";
-          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Beep frequency
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
           gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
           oscillator.start();
           oscillator.stop(audioCtx.currentTime + 0.15);
@@ -158,19 +169,19 @@ export const AttendanceManagementDashboard = () => {
 
       // Check if already scanned today
       const alreadyScanned = attendanceListRef.current.find(
-        (a) => a.nis === student.nis && a.status === "Hadir",
+        (a) => a.nis === student.nis && a.status === "Hadir"
       );
 
       if (alreadyScanned) {
         setScanResult({
           success: false,
-          message: `${student.nama} (${student.nis}) sudah tercatat hadir jam ${alreadyScanned.jamMasuk}.`,
+          message: `${student.namaLengkap} (${student.nis}) sudah tercatat hadir jam ${alreadyScanned.jamMasuk}.`,
         });
       } else {
         const jamSekarang = format(new Date(), "HH:mm");
         const newRecord: AttendanceRecord = {
-          id: String(attendanceListRef.current.length + 1),
-          nama: student.nama,
+          id: student.id,
+          nama: student.namaLengkap,
           nis: student.nis,
           kelas: student.kelas,
           status: "Hadir",
@@ -179,9 +190,8 @@ export const AttendanceManagementDashboard = () => {
           scanMethod: "QR Card",
         };
 
-        // If student exists but had a different status, update them, otherwise append
         const existsIndex = attendanceListRef.current.findIndex(
-          (a) => a.nis === student.nis,
+          (a) => a.nis === student.nis
         );
         if (existsIndex >= 0) {
           const updated = [...attendanceListRef.current];
@@ -193,7 +203,7 @@ export const AttendanceManagementDashboard = () => {
 
         setScanResult({
           success: true,
-          message: `Berhasil! Kartu ${student.nama} (${student.nis}) terverifikasi. Masuk jam ${jamSekarang}.`,
+          message: `Berhasil! Kartu ${student.namaLengkap} (${student.nis}) terverifikasi. Masuk jam ${jamSekarang}.`,
         });
       }
     } else {
@@ -213,6 +223,32 @@ export const AttendanceManagementDashboard = () => {
     if (!qrCodeInput.trim()) return;
     processAttendance(qrCodeInput);
     setQrCodeInput("");
+  };
+
+  // Export rekap to Excel (dynamic import to avoid chunk conflict)
+  const handleExport = async () => {
+    const XLSX = await import("xlsx");
+    const exportData = attendanceList.map((r) => ({
+      Nama: r.nama,
+      NIS: r.nis,
+      Kelas: r.kelas,
+      Status: r.status === "Belum" ? "Alpa" : r.status,
+      "Jam Masuk": r.jamMasuk,
+      Metode: r.scanMethod || "-",
+      Keterangan: r.keterangan,
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws["!cols"] = Object.keys(exportData[0] || {}).map(() => ({ wch: 20 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      wb,
+      ws,
+      `Absensi ${format(new Date(), "dd-MM-yyyy")}`
+    );
+    XLSX.writeFile(
+      wb,
+      `Rekap_Absensi_${format(new Date(), "dd-MM-yyyy")}.xlsx`
+    );
   };
 
   // Setup real camera scanning effect
@@ -244,14 +280,14 @@ export const AttendanceManagementDashboard = () => {
               },
               () => {
                 // Ignore parser errors
-              },
+              }
             )
             .catch((err) => {
               console.error("Camera start error:", err);
               setHasCameraError(true);
               setCameraErrorMessage(
                 err?.message ||
-                  "Kamera tidak dapat diakses atau tidak ditemukan.",
+                  "Kamera tidak dapat diakses atau tidak ditemukan."
               );
             });
         } catch (e: any) {
@@ -310,14 +346,19 @@ export const AttendanceManagementDashboard = () => {
             <XCircle size={12} /> Alpa
           </span>
         );
+      case "Belum":
       default:
-        return null;
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-700/50 text-slate-400 border border-slate-600/40">
+            <Clock size={12} /> Belum Absen
+          </span>
+        );
     }
   };
 
   const changeStatus = (
     id: string,
-    newStatus: "Hadir" | "Sakit" | "Izin" | "Alpa",
+    newStatus: "Hadir" | "Sakit" | "Izin" | "Alpa" | "Belum"
   ) => {
     setAttendanceList(
       attendanceList.map((item) => {
@@ -330,7 +371,7 @@ export const AttendanceManagementDashboard = () => {
           };
         }
         return item;
-      }),
+      })
     );
   };
 
@@ -345,13 +386,13 @@ export const AttendanceManagementDashboard = () => {
 
   const totalSiswa = filteredAttendance.length;
   const totalHadir = filteredAttendance.filter(
-    (a) => a.status === "Hadir",
+    (a) => a.status === "Hadir"
   ).length;
   const totalSakitIzin = filteredAttendance.filter(
-    (a) => a.status === "Sakit" || a.status === "Izin",
+    (a) => a.status === "Sakit" || a.status === "Izin"
   ).length;
   const totalAlpa = filteredAttendance.filter(
-    (a) => a.status === "Alpa",
+    (a) => a.status === "Alpa" || a.status === "Belum"
   ).length;
 
   return (
@@ -360,14 +401,34 @@ export const AttendanceManagementDashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            Absensi & QR Scan Kartu Siswa
+            Absensi &amp; QR Scan Kartu Siswa
           </h1>
           <p className="text-sm text-slate-400">
-            Sistem absensi terintegrasi kartu siswa digital berbasis scan QR
-            Code guru kelas.
+            Sistem absensi terintegrasi dengan data siswa dari spreadsheet —{" "}
+            {students.length > 0 ? (
+              <span className="text-emerald-400 font-semibold">
+                {students.length} siswa terdaftar
+              </span>
+            ) : (
+              <span className="text-amber-400">Belum ada data siswa</span>
+            )}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
+          {/* Sync button */}
+          {source?.type === "gsheets" && (
+            <button
+              onClick={() => importFromGSheets()}
+              disabled={importStatus === "loading"}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#1d2950] border border-[#43424e] rounded-xl hover:bg-white/5 text-white transition-all text-sm font-semibold disabled:opacity-50"
+            >
+              <RefreshCw
+                size={16}
+                className={importStatus === "loading" ? "animate-spin" : ""}
+              />
+              Sinkron Data
+            </button>
+          )}
           <button
             onClick={() => setIsScanning(!isScanning)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
@@ -380,13 +441,31 @@ export const AttendanceManagementDashboard = () => {
             {isScanning ? "Tutup Mode Scan" : "Mulai Scan Kartu Siswa"}
           </button>
           <button
-            onClick={() => alert("Mengunduh Rekapitulasi Absensi...")}
+            onClick={handleExport}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#1d2950] border border-[#43424e] rounded-xl hover:bg-[#d9ab3f]/10 text-white transition-all text-sm font-semibold"
           >
             <Download size={18} /> Export Rekap
           </button>
         </div>
       </div>
+
+      {/* No Students Warning */}
+      {students.length === 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300">
+          <Database size={20} className="shrink-0" />
+          <p className="text-sm">
+            <strong>Data siswa belum tersedia.</strong> Silakan import data
+            siswa dari halaman{" "}
+            <a
+              href="/dashboard/siswa"
+              className="underline font-bold hover:text-amber-200"
+            >
+              Data Siswa
+            </a>{" "}
+            terlebih dahulu agar absensi dapat berjalan dengan data nyata.
+          </p>
+        </div>
+      )}
 
       {/* QR Scanner Mode Widget */}
       <AnimatePresence>
@@ -398,7 +477,7 @@ export const AttendanceManagementDashboard = () => {
             className="overflow-hidden"
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-[#1a2347]/80 backdrop-blur-xl rounded-3xl border border-[#43424e] p-6">
-              {/* Left Column: Viewfinder Simulation */}
+              {/* Left Column: Camera Viewfinder */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="relative bg-[#121833] w-full h-[380px] sm:h-[450px] lg:aspect-video rounded-2xl overflow-hidden border border-[#43424e]/80 flex flex-col items-center justify-center">
                   {/* Camera view element */}
@@ -431,8 +510,8 @@ export const AttendanceManagementDashboard = () => {
                         Pindai QR Sekarang
                       </button>
                       <p className="text-xs text-slate-300 mt-3 max-w-xs leading-relaxed">
-                        Posisikan QR Code di depan kamera, lalu klik tombol di
-                        atas untuk memverifikasi absensi.
+                        Posisikan QR Code Kartu Siswa di depan kamera, lalu
+                        klik tombol di atas untuk verifikasi absensi.
                       </p>
                     </div>
                   )}
@@ -447,7 +526,6 @@ export const AttendanceManagementDashboard = () => {
                           animation: "scanLine 2.5s infinite ease-in-out",
                         }}
                       />
-
                       {/* Corner Reticles */}
                       <div className="absolute top-2 left-2 w-6 h-6 border-t-4 border-l-4 border-[#d9ab3f] rounded-tl-md" />
                       <div className="absolute top-2 right-2 w-6 h-6 border-t-4 border-r-4 border-[#d9ab3f] rounded-tr-md" />
@@ -456,7 +534,7 @@ export const AttendanceManagementDashboard = () => {
                     </div>
                   )}
 
-                  {/* Finder HUD */}
+                  {/* HUD top-right */}
                   <div className="absolute top-6 right-6 flex gap-2 z-20">
                     <button
                       type="button"
@@ -474,7 +552,7 @@ export const AttendanceManagementDashboard = () => {
                     </span>
                   </div>
 
-                  {/* Instruction text overlay */}
+                  {/* Instruction overlay when scanning */}
                   {!hasCameraError && canScan && (
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/65 backdrop-blur-md px-4 py-2 rounded-xl text-center z-20 max-w-[90%] pointer-events-none border border-[#d9ab3f]/20">
                       <p className="text-xs font-semibold text-white flex items-center gap-1.5 justify-center">
@@ -500,6 +578,12 @@ export const AttendanceManagementDashboard = () => {
                     Gunakan scanner kamera atau masukkan NIS siswa secara manual
                     jika kamera tidak mendeteksi kode QR.
                   </p>
+                  {students.length > 0 && (
+                    <div className="mt-2 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+                      <CheckCircle size={11} />
+                      {students.length} siswa terdaftar siap di-scan
+                    </div>
+                  )}
                 </div>
 
                 {/* Scan Result Feedback */}
@@ -585,7 +669,7 @@ export const AttendanceManagementDashboard = () => {
         </div>
         <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-medium">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Hadir
             </span>
             <UserCheck className="text-emerald-400" size={18} />
@@ -606,7 +690,7 @@ export const AttendanceManagementDashboard = () => {
         <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Alpa
+              Alpa / Belum
             </span>
             <XCircle className="text-red-400" size={18} />
           </div>
@@ -614,7 +698,7 @@ export const AttendanceManagementDashboard = () => {
         </div>
       </div>
 
-      {/* Date Header & Filter Container */}
+      {/* Date Header & Filter */}
       <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl p-4 border border-[#43424e] flex flex-col md:flex-row gap-4 justify-between items-center">
         <div className="flex items-center gap-3 w-full md:w-auto">
           <Calendar size={18} className="text-[#d9ab3f]" />
@@ -634,7 +718,7 @@ export const AttendanceManagementDashboard = () => {
             />
           </div>
 
-          {/* Class Filter */}
+          {/* Class Filter – dynamic from real data */}
           <div className="flex items-center gap-2 bg-[#1d2950] border border-[#43424e] px-3 py-1.5 rounded-lg">
             <span className="text-xs font-medium text-slate-300 whitespace-nowrap">
               Filter Kelas:
@@ -647,12 +731,11 @@ export const AttendanceManagementDashboard = () => {
               <option value="All" className="bg-[#1a2347]">
                 Semua Kelas
               </option>
-              <option value="X-1" className="bg-[#1a2347]">
-                X-1 (IPA)
-              </option>
-              <option value="X-2" className="bg-[#1a2347]">
-                X-2 (IPS)
-              </option>
+              {kelasList.map((k) => (
+                <option key={k} value={k} className="bg-[#1a2347]">
+                  {k}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -682,7 +765,9 @@ export const AttendanceManagementDashboard = () => {
               {filteredAttendance.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
-                    Tidak ada data absensi siswa yang cocok.
+                    {students.length === 0
+                      ? "Belum ada data siswa. Import data dari halaman Data Siswa."
+                      : "Tidak ada data absensi siswa yang cocok."}
                   </td>
                 </tr>
               ) : (
@@ -733,28 +818,19 @@ export const AttendanceManagementDashboard = () => {
                         }
                         className="bg-[#1d2950] text-[#d9ab3f] border border-[#43424e] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#d9ab3f] cursor-pointer"
                       >
-                        <option
-                          value="Hadir"
-                          className="bg-[#1a2347] text-emerald-400"
-                        >
+                        <option value="Belum" className="bg-[#1a2347] text-slate-400">
+                          Belum Absen
+                        </option>
+                        <option value="Hadir" className="bg-[#1a2347] text-emerald-400">
                           Hadir
                         </option>
-                        <option
-                          value="Sakit"
-                          className="bg-[#1a2347] text-blue-400"
-                        >
+                        <option value="Sakit" className="bg-[#1a2347] text-blue-400">
                           Sakit
                         </option>
-                        <option
-                          value="Izin"
-                          className="bg-[#1a2347] text-amber-400"
-                        >
+                        <option value="Izin" className="bg-[#1a2347] text-amber-400">
                           Izin
                         </option>
-                        <option
-                          value="Alpa"
-                          className="bg-[#1a2347] text-red-400"
-                        >
+                        <option value="Alpa" className="bg-[#1a2347] text-red-400">
                           Alpa
                         </option>
                       </select>

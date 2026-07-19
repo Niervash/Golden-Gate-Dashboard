@@ -33,8 +33,8 @@ export type ImportStatus = "idle" | "loading" | "success" | "error";
 
 interface SpreadsheetSource {
   type: "file" | "gsheets" | "manual";
-  label: string; // filename or Sheets URL
-  importedAt: string; // ISO timestamp
+  label: string;
+  importedAt: string;
   count: number;
 }
 
@@ -49,59 +49,45 @@ interface StudentContextType {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   importFromFile: (file: File) => Promise<void>;
   importFromGSheets: (url?: string) => Promise<void>;
+  saveStudentToSheets: (student: Student) => Promise<void>;
   clearStudents: () => void;
   addOrUpdateStudent: (student: Student) => void;
   removeStudent: (id: string) => void;
-  /** Reset only import status messages */
   resetStatus: () => void;
-  /** Download a ready-to-use Excel template for student data */
   downloadTemplate: () => Promise<void>;
 }
 
 // ─── Column mapping ──────────────────────────────────────────────────────────
 
 const COL: Record<string, keyof Student> = {
-  // NIS
   nis: "nis",
   "no induk": "nis",
   "no.induk": "nis",
   "nomor induk": "nis",
-  // NISN
   nisn: "nisn",
-  // Nama
   nama: "namaLengkap",
   "nama siswa": "namaLengkap",
   "nama lengkap": "namaLengkap",
   "nama peserta didik": "namaLengkap",
-  // Kelas
   kelas: "kelas",
   class: "kelas",
   rombel: "kelas",
-  // Jurusan
   jurusan: "jurusan",
   "program studi": "jurusan",
-  // JK
   "jenis kelamin": "jenisKelamin",
   jk: "jenisKelamin",
   gender: "jenisKelamin",
-  // Status
   status: "status",
-  // Tanggal Lahir
   "tanggal lahir": "tanggalLahir",
   "tgl lahir": "tanggalLahir",
   ttl: "tanggalLahir",
-  // Tempat Lahir
   "tempat lahir": "tempatLahir",
-  // Alamat
   alamat: "alamat",
-  // No Telp
   "no telp": "noTelp",
   "no.telp": "noTelp",
   "nomor hp": "noTelp",
   hp: "noTelp",
-  // Email
   email: "email",
-  // Wali
   "nama wali": "namaWali",
   "nama orang tua": "namaWali",
   wali: "namaWali",
@@ -123,8 +109,12 @@ function parseRows(rows: Record<string, string>[]): Student[] {
         }
       }
       if (!s.namaLengkap && !s.nis) return null;
+      const uniqueId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `sheet-${idx}-${Date.now()}-${Math.random()}`;
       return {
-        id: `sheet-${idx}-${Date.now()}`,
+        id: uniqueId,
         nis: s.nis || "-",
         nisn: s.nisn,
         namaLengkap: s.namaLengkap || "-",
@@ -165,7 +155,6 @@ function loadFromStorage(): {
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
-
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
 export const StudentProvider = ({
@@ -175,8 +164,13 @@ export const StudentProvider = ({
 }) => {
   const saved = loadFromStorage();
 
+  // ⚠️ Ganti dengan URL CSV publik dari Google Sheets (harus di‑publish)
   const DEFAULT_GSHEETS_URL =
-    "https://docs.google.com/spreadsheets/d/1xg1keWXGRB4h8HB_ZxmFh1q9sPQBGx74HAUgOAcVL2Q/edit?usp=sharing";
+    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQEJXU6ZIueGPFp0W7o7ypZVtZ7Seiya1cESF2NoOSI0SOoIJ-Riul8-sLc_KyH5xtEUjTqIaqukXfi/pub?gid=31445495&single=true&output=csv";
+
+  // ⚠️ Ganti dengan URL Apps Script yang sudah dideploy
+  const GAS_URL =
+    "https://script.google.com/macros/s/AKfycbyz-zixlx2IfXLCYg2upGLlehp32JRYZJqlFb-McYZVT0BV7SxgSGsUPTB3FCHh00nv/exec";
 
   const [students, setStudents] = useState<Student[]>(saved.students);
   const [source, setSource] = useState<SpreadsheetSource | null>(saved.source);
@@ -273,126 +267,140 @@ export const StudentProvider = ({
     }
   }, []);
 
-  // ── Import from Google Sheets ─────────────────────────────────────────────
-  const importFromGSheets = useCallback(
-    async (url?: string) => {
-      const targetUrl = url ?? gsheetsUrl;
-      if (!targetUrl.trim()) {
-        setImportStatus("error");
-        setImportMessage("Masukkan URL Google Sheets terlebih dahulu.");
-        return;
+  // ── Import / Refresh from Google Sheets ──────────────────────────────────
+  const importFromGSheets = useCallback(async () => {
+    setImportStatus("loading");
+    setImportMessage("");
+
+    try {
+      const res = await fetch(DEFAULT_GSHEETS_URL);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
       }
 
-      const match = targetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-      if (!match) {
+      const text = await res.text();
+      const wb = XLSX.read(text, { type: "string" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+
+      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, {
+        defval: "",
+      });
+
+      const parsed = parseRows(rows);
+
+      if (parsed.length === 0) {
         setImportStatus("error");
         setImportMessage(
-          "URL tidak valid. Gunakan link Google Sheets yang benar.",
+          "Tidak ada data ditemukan. Pastikan ada kolom NIS, Nama, dan Kelas.",
         );
         return;
       }
 
-      const sheetId = match[1];
-      const gidMatch = targetUrl.match(/[#&?]gid=(\d+)/);
-      const gid = gidMatch ? gidMatch[1] : "0";
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+      const src: SpreadsheetSource = {
+        type: "gsheets",
+        label: DEFAULT_GSHEETS_URL,
+        importedAt: new Date().toISOString(),
+        count: parsed.length,
+      };
 
-      setImportStatus("loading");
-      setImportMessage("");
+      applyImport(parsed, src);
+    } catch (err) {
+      console.error(err);
+      setImportStatus("error");
+      setImportMessage(
+        "Gagal mengambil data dari Google Sheets. Pastikan spreadsheet masih dipublish sebagai CSV.",
+      );
+    }
+  }, []);
 
+  // ── Simpan ke Google Sheets via Apps Script ──────────────────────────────
+  const saveStudentToSheets = useCallback(
+    async (student: Student) => {
       try {
-        const res = await fetch(csvUrl);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const text = await res.text();
-
-        const wb = XLSX.read(text, { type: "string" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, {
-          defval: "",
+        const response = await fetch(GAS_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+          },
+          body: JSON.stringify(student),
         });
-        const parsed = parseRows(rows);
 
-        if (parsed.length === 0) {
-          setImportStatus("error");
-          setImportMessage(
-            "Tidak ada data ditemukan. Pastikan ada kolom: NIS, Nama, Kelas.",
-          );
-          return;
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
 
-        const src: SpreadsheetSource = {
-          type: "gsheets",
-          label: targetUrl,
-          importedAt: new Date().toISOString(),
-          count: parsed.length,
-        };
-        applyImport(parsed, src);
-        localStorage.setItem("local_gsheets_url", targetUrl);
-        if (url) setGsheetsUrl(url);
-      } catch {
-        setImportStatus("error");
-        setImportMessage(
-          "Gagal mengimpor. Pastikan: (1) Spreadsheet dibagikan 'Anyone with the link — Viewer', (2) URL benar.",
-        );
+        const text = await response.text();
+        const result = JSON.parse(text);
+        if (!result.success) {
+          throw new Error(result.error || "Gagal menyimpan ke Sheets");
+        }
+
+        // Tunggu sebentar agar sheet sempat update, lalu refresh data
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await importFromGSheets();
+      } catch (err) {
+        console.error("saveStudentToSheets error:", err);
+        throw err;
       }
     },
-    [gsheetsUrl],
+    [importFromGSheets],
   );
 
-  // ── Auto-sync on mount when source is GSheets ────────────────────────────
-  // We use a ref to ensure this only runs once on initial mount
+  // ── Auto-sync on mount ────────────────────────────────────────────────────
   const hasSyncedOnMount = useRef(false);
-
-  // DEFAULT_GSHEETS_URL sudah dideklarasikan di atas (scope komponen) — tidak perlu dideklarasi ulang
 
   useEffect(() => {
     if (hasSyncedOnMount.current) return;
     hasSyncedOnMount.current = true;
 
-    // Load local spreadsheet link if exists in local storage, otherwise use hardcoded default URL
-    const savedLink = localStorage.getItem("local_gsheets_url");
-    const activeUrl = savedLink || DEFAULT_GSHEETS_URL;
+    setImportStatus("loading");
 
-    if (activeUrl) {
-      const match = activeUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-      if (match) {
-        const sheetId = match[1];
-        const gidMatch = activeUrl.match(/[#&?]gid=(\d+)/);
-        const gid = gidMatch ? gidMatch[1] : "0";
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+    fetch(DEFAULT_GSHEETS_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      })
+      .then((text) => {
+        const wb = XLSX.read(text, { type: "string" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
 
-        // Background refresh from stored sheet URL
-        fetch(csvUrl)
-          .then((res) => (res.ok ? res.text() : Promise.reject(res.status)))
-          .then((text) => {
-            const wb = XLSX.read(text, { type: "string" });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, {
-              defval: "",
-            });
-            const parsed = parseRows(rows);
-            if (parsed.length > 0) {
-              const now = new Date().toISOString();
-              const newSource: SpreadsheetSource = {
-                type: "gsheets",
-                label: activeUrl,
-                importedAt: now,
-                count: parsed.length,
-              };
-              setStudents(parsed);
-              setSource(newSource);
-              setLastSyncAt(now);
-              localStorage.setItem(LS_KEY_STUDENTS, JSON.stringify(parsed));
-              localStorage.setItem(LS_KEY_SOURCE, JSON.stringify(newSource));
-              localStorage.setItem("local_gsheets_url", activeUrl);
-            }
-          })
-          .catch(() => {
-            /* silently fail on background sync */
-          });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, {
+          defval: "",
+        });
+
+        const parsed = parseRows(rows);
+
+        if (parsed.length === 0) {
+          setImportStatus("error");
+          setImportMessage("Spreadsheet kosong.");
+          return;
+        }
+
+        const now = new Date().toISOString();
+
+        const src: SpreadsheetSource = {
+          type: "gsheets",
+          label: DEFAULT_GSHEETS_URL,
+          importedAt: now,
+          count: parsed.length,
+        };
+
+        setStudents(parsed);
+        setSource(src);
+        setLastSyncAt(now);
+        persist(parsed, src);
+
+        setImportStatus("success");
+        setImportMessage(
+          `✓ ${parsed.length} data siswa berhasil dimuat dari Google Sheets.`,
+        );
+      })
+      .catch((err) => {
+        console.error(err);
+        setImportStatus("error");
+        setImportMessage("Tidak dapat mengambil data dari Google Sheets.");
+      });
   }, []);
 
   // ── Download template ─────────────────────────────────────────────────────
@@ -518,6 +526,7 @@ export const StudentProvider = ({
         fileInputRef,
         importFromFile,
         importFromGSheets,
+        saveStudentToSheets,
         clearStudents,
         addOrUpdateStudent,
         removeStudent,
