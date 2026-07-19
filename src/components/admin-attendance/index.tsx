@@ -19,7 +19,7 @@ import {
   Volume2,
   VolumeX,
   CreditCard,
-  UserPlus
+  UserPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -37,26 +37,70 @@ interface AttendanceRecord {
 }
 
 const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  { id: "1", nama: "Ahmad Rizki Pratama", nis: "2023001", kelas: "X-1", status: "Hadir", jamMasuk: "06:45", keterangan: "-", scanMethod: "QR Card" },
-  { id: "2", nama: "Siti Nurhaliza", nis: "2023002", kelas: "X-1", status: "Sakit", jamMasuk: "-", keterangan: "Surat Dokter" },
-  { id: "3", nama: "Budi Setiawan", nis: "2022015", kelas: "X-1", status: "Hadir", jamMasuk: "06:50", keterangan: "-", scanMethod: "QR Card" },
-  { id: "4", nama: "Dewi Anggraeni", nis: "2021042", kelas: "X-2", status: "Izin", jamMasuk: "-", keterangan: "Acara Keluarga" },
-  { id: "5", nama: "Rizki Fadilah", nis: "2020089", kelas: "X-2", status: "Alpa", jamMasuk: "-", keterangan: "Tanpa Keterangan" },
+  {
+    id: "1",
+    nama: "Ahmad Rizki Pratama",
+    nis: "2023001",
+    kelas: "X-1",
+    status: "Hadir",
+    jamMasuk: "06:45",
+    keterangan: "-",
+    scanMethod: "QR Card",
+  },
+  {
+    id: "2",
+    nama: "Siti Nurhaliza",
+    nis: "2023002",
+    kelas: "X-1",
+    status: "Sakit",
+    jamMasuk: "-",
+    keterangan: "Surat Dokter",
+  },
+  {
+    id: "3",
+    nama: "Budi Setiawan",
+    nis: "2022015",
+    kelas: "X-1",
+    status: "Hadir",
+    jamMasuk: "06:50",
+    keterangan: "-",
+    scanMethod: "QR Card",
+  },
+  {
+    id: "4",
+    nama: "Dewi Anggraeni",
+    nis: "2021042",
+    kelas: "X-2",
+    status: "Izin",
+    jamMasuk: "-",
+    keterangan: "Acara Keluarga",
+  },
 ];
 
 export const AttendanceManagementDashboard = () => {
   const [selectedKelas, setSelectedKelas] = useState("All");
-  const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
+  const [attendanceList, setAttendanceList] =
+    useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [qrCodeInput, setQrCodeInput] = useState("");
-  const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [scanResult, setScanResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  
+
   // Camera scanning states
   const [hasCameraError, setHasCameraError] = useState(false);
   const [cameraErrorMessage, setCameraErrorMessage] = useState("");
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
+
+  // Manual trigger state
+  const [canScan, setCanScan] = useState(false);
+  const canScanRef = useRef(canScan);
+  useEffect(() => {
+    canScanRef.current = canScan;
+  }, [canScan]);
 
   // Sync state with refs to avoid stale closures in camera callback
   const isSoundEnabledRef = useRef(isSoundEnabled);
@@ -84,16 +128,22 @@ export const AttendanceManagementDashboard = () => {
       { nis: "2020089", nama: "Rizki Fadilah", kelas: "X-2" },
       { nis: "2023005", nama: "Clara Salsabila", kelas: "X-1" },
       { nis: "2023006", nama: "Farhan Ardiansyah", kelas: "X-2" },
-      { nis: "2023007", nama: "Gaby Anastasia", kelas: "X-1" }
+      { nis: "2023007", nama: "Gaby Anastasia", kelas: "X-1" },
     ];
 
-    const student = mockStudentDatabase.find(s => s.nis === qrInput.trim() || s.nama.toLowerCase().includes(qrInput.toLowerCase()));
+    const student = mockStudentDatabase.find(
+      (s) =>
+        s.nis === qrInput.trim() ||
+        s.nama.toLowerCase().includes(qrInput.toLowerCase()),
+    );
 
     if (student) {
       // Play beep sound if enabled
       if (isSoundEnabledRef.current) {
         try {
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const audioCtx = new (
+            window.AudioContext || (window as any).webkitAudioContext
+          )();
           const oscillator = audioCtx.createOscillator();
           const gainNode = audioCtx.createGain();
           oscillator.connect(gainNode);
@@ -107,12 +157,14 @@ export const AttendanceManagementDashboard = () => {
       }
 
       // Check if already scanned today
-      const alreadyScanned = attendanceListRef.current.find(a => a.nis === student.nis && a.status === "Hadir");
+      const alreadyScanned = attendanceListRef.current.find(
+        (a) => a.nis === student.nis && a.status === "Hadir",
+      );
 
       if (alreadyScanned) {
         setScanResult({
           success: false,
-          message: `${student.nama} (${student.nis}) sudah tercatat hadir jam ${alreadyScanned.jamMasuk}.`
+          message: `${student.nama} (${student.nis}) sudah tercatat hadir jam ${alreadyScanned.jamMasuk}.`,
         });
       } else {
         const jamSekarang = format(new Date(), "HH:mm");
@@ -124,11 +176,13 @@ export const AttendanceManagementDashboard = () => {
           status: "Hadir",
           jamMasuk: jamSekarang,
           keterangan: "-",
-          scanMethod: "QR Card"
+          scanMethod: "QR Card",
         };
 
         // If student exists but had a different status, update them, otherwise append
-        const existsIndex = attendanceListRef.current.findIndex(a => a.nis === student.nis);
+        const existsIndex = attendanceListRef.current.findIndex(
+          (a) => a.nis === student.nis,
+        );
         if (existsIndex >= 0) {
           const updated = [...attendanceListRef.current];
           updated[existsIndex] = newRecord;
@@ -139,13 +193,14 @@ export const AttendanceManagementDashboard = () => {
 
         setScanResult({
           success: true,
-          message: `Berhasil! Kartu ${student.nama} (${student.nis}) terverifikasi. Masuk jam ${jamSekarang}.`
+          message: `Berhasil! Kartu ${student.nama} (${student.nis}) terverifikasi. Masuk jam ${jamSekarang}.`,
         });
       }
     } else {
       setScanResult({
         success: false,
-        message: "Gagal! Kode QR kartu siswa tidak terdaftar di database Golden Gate."
+        message:
+          "Gagal! Kode QR kartu siswa tidak terdaftar di database Golden Gate.",
       });
     }
 
@@ -166,31 +221,39 @@ export const AttendanceManagementDashboard = () => {
     if (isScanning) {
       const timer = setTimeout(() => {
         if (!isMounted) return;
-        
+
         try {
           const scanner = new Html5Qrcode("qr-reader");
           qrScannerRef.current = scanner;
-          
-          scanner.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: (width, height) => {
-                const size = Math.min(width, height) * 0.7;
-                return { width: size, height: size };
-              }
-            },
-            (decodedText) => {
-              processAttendance(decodedText);
-            },
-            () => {
-              // Ignore parser errors
-            }
-          ).catch((err) => {
-            console.error("Camera start error:", err);
-            setHasCameraError(true);
-            setCameraErrorMessage(err?.message || "Kamera tidak dapat diakses atau tidak ditemukan.");
-          });
+
+          scanner
+            .start(
+              { facingMode: "environment" },
+              {
+                fps: 10,
+                qrbox: (width, height) => {
+                  const size = Math.min(width, height) * 0.7;
+                  return { width: size, height: size };
+                },
+              },
+              (decodedText) => {
+                if (canScanRef.current) {
+                  setCanScan(false);
+                  processAttendance(decodedText);
+                }
+              },
+              () => {
+                // Ignore parser errors
+              },
+            )
+            .catch((err) => {
+              console.error("Camera start error:", err);
+              setHasCameraError(true);
+              setCameraErrorMessage(
+                err?.message ||
+                  "Kamera tidak dapat diakses atau tidak ditemukan.",
+              );
+            });
         } catch (e: any) {
           console.error("Scanner init error:", e);
           setHasCameraError(true);
@@ -204,11 +267,12 @@ export const AttendanceManagementDashboard = () => {
         if (qrScannerRef.current) {
           const scanner = qrScannerRef.current;
           if (scanner.isScanning) {
-            scanner.stop()
+            scanner
+              .stop()
               .then(() => {
                 qrScannerRef.current = null;
               })
-              .catch(err => console.error("Failed to stop scanner", err));
+              .catch((err) => console.error("Failed to stop scanner", err));
           } else {
             qrScannerRef.current = null;
           }
@@ -251,7 +315,10 @@ export const AttendanceManagementDashboard = () => {
     }
   };
 
-  const changeStatus = (id: string, newStatus: "Hadir" | "Sakit" | "Izin" | "Alpa") => {
+  const changeStatus = (
+    id: string,
+    newStatus: "Hadir" | "Sakit" | "Izin" | "Alpa",
+  ) => {
     setAttendanceList(
       attendanceList.map((item) => {
         if (item.id === id) {
@@ -259,16 +326,17 @@ export const AttendanceManagementDashboard = () => {
             ...item,
             status: newStatus,
             jamMasuk: newStatus === "Hadir" ? format(new Date(), "HH:mm") : "-",
-            scanMethod: newStatus === "Hadir" ? "Manual" : undefined
+            scanMethod: newStatus === "Hadir" ? "Manual" : undefined,
           };
         }
         return item;
-      })
+      }),
     );
   };
 
   const filteredAttendance = attendanceList.filter((item) => {
-    const matchesKelas = selectedKelas === "All" || item.kelas === selectedKelas;
+    const matchesKelas =
+      selectedKelas === "All" || item.kelas === selectedKelas;
     const matchesSearch =
       item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.nis.includes(searchQuery);
@@ -276,18 +344,27 @@ export const AttendanceManagementDashboard = () => {
   });
 
   const totalSiswa = filteredAttendance.length;
-  const totalHadir = filteredAttendance.filter((a) => a.status === "Hadir").length;
-  const totalSakitIzin = filteredAttendance.filter((a) => a.status === "Sakit" || a.status === "Izin").length;
-  const totalAlpa = filteredAttendance.filter((a) => a.status === "Alpa").length;
+  const totalHadir = filteredAttendance.filter(
+    (a) => a.status === "Hadir",
+  ).length;
+  const totalSakitIzin = filteredAttendance.filter(
+    (a) => a.status === "Sakit" || a.status === "Izin",
+  ).length;
+  const totalAlpa = filteredAttendance.filter(
+    (a) => a.status === "Alpa",
+  ).length;
 
   return (
     <div className="space-y-6 pb-12 text-white">
       {/* Title Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Absensi & QR Scan Kartu Siswa</h1>
+          <h1 className="text-2xl font-bold text-white">
+            Absensi & QR Scan Kartu Siswa
+          </h1>
           <p className="text-sm text-slate-400">
-            Sistem absensi terintegrasi kartu siswa digital berbasis scan QR Code guru kelas.
+            Sistem absensi terintegrasi kartu siswa digital berbasis scan QR
+            Code guru kelas.
           </p>
         </div>
         <div className="flex gap-3">
@@ -324,15 +401,39 @@ export const AttendanceManagementDashboard = () => {
               {/* Left Column: Viewfinder Simulation */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="relative bg-[#121833] w-full h-[380px] sm:h-[450px] lg:aspect-video rounded-2xl overflow-hidden border border-[#43424e]/80 flex flex-col items-center justify-center">
-                  
                   {/* Camera view element */}
                   {!hasCameraError ? (
-                    <div id="qr-reader" className="absolute inset-0 w-full h-full z-0 overflow-hidden rounded-2xl" />
+                    <div
+                      id="qr-reader"
+                      className="absolute inset-0 w-full h-full z-0 overflow-hidden rounded-2xl"
+                    />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-red-950/20">
                       <AlertCircle size={40} className="text-red-400 mb-2" />
-                      <p className="text-sm font-semibold text-white">Gagal Mengakses Kamera</p>
-                      <p className="text-xs text-red-300 mt-1 max-w-md">{cameraErrorMessage}</p>
+                      <p className="text-sm font-semibold text-white">
+                        Gagal Mengakses Kamera
+                      </p>
+                      <p className="text-xs text-red-300 mt-1 max-w-md">
+                        {cameraErrorMessage}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Standby / Trigger Overlay */}
+                  {!canScan && !hasCameraError && (
+                    <div className="absolute inset-0 bg-black/55 backdrop-blur-md z-15 flex flex-col items-center justify-center p-6 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setCanScan(true)}
+                        className="px-6 py-4 bg-[#d9ab3f] text-[#23305d] font-bold rounded-2xl text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl cursor-pointer"
+                      >
+                        <Scan size={20} className="animate-pulse" />
+                        Pindai QR Sekarang
+                      </button>
+                      <p className="text-xs text-slate-300 mt-3 max-w-xs leading-relaxed">
+                        Posisikan QR Code di depan kamera, lalu klik tombol di
+                        atas untuk memverifikasi absensi.
+                      </p>
                     </div>
                   )}
 
@@ -340,9 +441,12 @@ export const AttendanceManagementDashboard = () => {
                   {!hasCameraError && (
                     <div className="absolute inset-0 border-2 border-dashed border-[#d9ab3f]/30 m-4 rounded-xl flex items-center justify-center pointer-events-none z-10">
                       {/* Laser Line */}
-                      <div className="w-full h-0.5 bg-[#d9ab3f] absolute animate-pulse shadow-[0_0_8px_#d9ab3f]" style={{
-                        animation: "scanLine 2.5s infinite ease-in-out"
-                      }} />
+                      <div
+                        className="w-full h-0.5 bg-[#d9ab3f] absolute animate-pulse shadow-[0_0_8px_#d9ab3f]"
+                        style={{
+                          animation: "scanLine 2.5s infinite ease-in-out",
+                        }}
+                      />
 
                       {/* Corner Reticles */}
                       <div className="absolute top-2 left-2 w-6 h-6 border-t-4 border-l-4 border-[#d9ab3f] rounded-tl-md" />
@@ -354,12 +458,16 @@ export const AttendanceManagementDashboard = () => {
 
                   {/* Finder HUD */}
                   <div className="absolute top-6 right-6 flex gap-2 z-20">
-                    <button 
+                    <button
                       type="button"
-                      onClick={() => setIsSoundEnabled(!isSoundEnabled)} 
+                      onClick={() => setIsSoundEnabled(!isSoundEnabled)}
                       className="p-2 bg-black/40 rounded-lg text-white hover:bg-black/60 transition-all cursor-pointer"
                     >
-                      {isSoundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                      {isSoundEnabled ? (
+                        <Volume2 size={16} />
+                      ) : (
+                        <VolumeX size={16} />
+                      )}
                     </button>
                     <span className="px-3 py-1 bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] font-mono uppercase tracking-wider rounded-md animate-pulse">
                       CAM Viewfinder
@@ -367,10 +475,14 @@ export const AttendanceManagementDashboard = () => {
                   </div>
 
                   {/* Instruction text overlay */}
-                  {!hasCameraError && (
+                  {!hasCameraError && canScan && (
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/65 backdrop-blur-md px-4 py-2 rounded-xl text-center z-20 max-w-[90%] pointer-events-none border border-[#d9ab3f]/20">
                       <p className="text-xs font-semibold text-white flex items-center gap-1.5 justify-center">
-                        <Scan size={14} className="text-[#d9ab3f] animate-pulse" /> Arahkan QR Code Kartu Siswa ke Kamera
+                        <Scan
+                          size={14}
+                          className="text-[#d9ab3f] animate-pulse"
+                        />{" "}
+                        Arahkan QR Code Kartu Siswa ke Kamera
                       </p>
                     </div>
                   )}
@@ -385,7 +497,8 @@ export const AttendanceManagementDashboard = () => {
                     Pencatatan Kehadiran Siswa
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Gunakan scanner kamera atau masukkan NIS siswa secara manual jika kamera tidak mendeteksi kode QR.
+                    Gunakan scanner kamera atau masukkan NIS siswa secara manual
+                    jika kamera tidak mendeteksi kode QR.
                   </p>
                 </div>
 
@@ -404,10 +517,16 @@ export const AttendanceManagementDashboard = () => {
                             : "bg-red-500/20 border-red-500/30 text-red-300"
                         }`}
                       >
-                        {scanResult.success ? <CheckCircle size={20} className="flex-shrink-0" /> : <XCircle size={20} className="flex-shrink-0" />}
+                        {scanResult.success ? (
+                          <CheckCircle size={20} className="flex-shrink-0" />
+                        ) : (
+                          <XCircle size={20} className="flex-shrink-0" />
+                        )}
                         <div>
                           <p className="text-xs uppercase font-bold tracking-wider">
-                            {scanResult.success ? "Scan Sukses" : "Scan Gagal / Peringatan"}
+                            {scanResult.success
+                              ? "Scan Sukses"
+                              : "Scan Gagal / Peringatan"}
                           </p>
                           <p className="text-xs sm:text-sm font-medium mt-1">
                             {scanResult.message}
@@ -416,7 +535,10 @@ export const AttendanceManagementDashboard = () => {
                       </motion.div>
                     ) : (
                       <div className="w-full p-4 rounded-xl border border-dashed border-[#43424e] text-center text-xs text-slate-400">
-                        <Sparkles size={16} className="mx-auto mb-1.5 text-slate-500" />
+                        <Sparkles
+                          size={16}
+                          className="mx-auto mb-1.5 text-slate-500"
+                        />
                         Belum ada kartu siswa yang ter-scan.
                       </div>
                     )}
@@ -454,28 +576,38 @@ export const AttendanceManagementDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Siswa</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Total Siswa
+            </span>
             <Users className="text-slate-400" size={18} />
           </div>
           <h3 className="text-2xl font-bold text-white">{totalSiswa}</h3>
         </div>
         <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-medium">Hadir</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-medium">
+              Hadir
+            </span>
             <UserCheck className="text-emerald-400" size={18} />
           </div>
           <h3 className="text-2xl font-bold text-emerald-400">{totalHadir}</h3>
         </div>
         <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Sakit / Izin</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Sakit / Izin
+            </span>
             <AlertCircle className="text-amber-400" size={18} />
           </div>
-          <h3 className="text-2xl font-bold text-amber-400">{totalSakitIzin}</h3>
+          <h3 className="text-2xl font-bold text-amber-400">
+            {totalSakitIzin}
+          </h3>
         </div>
         <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-2xl border border-[#43424e] p-5">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Alpa</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Alpa
+            </span>
             <XCircle className="text-red-400" size={18} />
           </div>
           <h3 className="text-2xl font-bold text-red-400">{totalAlpa}</h3>
@@ -488,7 +620,7 @@ export const AttendanceManagementDashboard = () => {
           <Calendar size={18} className="text-[#d9ab3f]" />
           <span className="font-semibold text-white">{today}</span>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-stretch sm:items-center">
           {/* Search Box */}
           <div className="relative flex-1 sm:w-64 bg-[#1d2950] border border-[#43424e] rounded-lg px-3 py-1.5 flex items-center gap-2">
@@ -504,15 +636,23 @@ export const AttendanceManagementDashboard = () => {
 
           {/* Class Filter */}
           <div className="flex items-center gap-2 bg-[#1d2950] border border-[#43424e] px-3 py-1.5 rounded-lg">
-            <span className="text-xs font-medium text-slate-300 whitespace-nowrap">Filter Kelas:</span>
+            <span className="text-xs font-medium text-slate-300 whitespace-nowrap">
+              Filter Kelas:
+            </span>
             <select
               className="appearance-none bg-transparent border-none focus:outline-none text-xs font-bold text-[#d9ab3f] cursor-pointer pr-4"
               value={selectedKelas}
               onChange={(e) => setSelectedKelas(e.target.value)}
             >
-              <option value="All" className="bg-[#1a2347]">Semua Kelas</option>
-              <option value="X-1" className="bg-[#1a2347]">X-1 (IPA)</option>
-              <option value="X-2" className="bg-[#1a2347]">X-2 (IPS)</option>
+              <option value="All" className="bg-[#1a2347]">
+                Semua Kelas
+              </option>
+              <option value="X-1" className="bg-[#1a2347]">
+                X-1 (IPA)
+              </option>
+              <option value="X-2" className="bg-[#1a2347]">
+                X-2 (IPS)
+              </option>
             </select>
           </div>
         </div>
@@ -547,7 +687,10 @@ export const AttendanceManagementDashboard = () => {
                 </tr>
               ) : (
                 filteredAttendance.map((item) => (
-                  <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                  <tr
+                    key={item.id}
+                    className="hover:bg-white/5 transition-colors"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="font-semibold text-white">{item.nama}</p>
                     </td>
@@ -563,7 +706,8 @@ export const AttendanceManagementDashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {item.jamMasuk !== "-" ? (
                         <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
-                          <Clock size={12} className="text-emerald-400" /> {item.jamMasuk}
+                          <Clock size={12} className="text-emerald-400" />{" "}
+                          {item.jamMasuk}
                         </div>
                       ) : (
                         <span className="text-slate-500">-</span>
@@ -584,13 +728,35 @@ export const AttendanceManagementDashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-xs">
                       <select
                         value={item.status}
-                        onChange={(e) => changeStatus(item.id, e.target.value as any)}
+                        onChange={(e) =>
+                          changeStatus(item.id, e.target.value as any)
+                        }
                         className="bg-[#1d2950] text-[#d9ab3f] border border-[#43424e] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#d9ab3f] cursor-pointer"
                       >
-                        <option value="Hadir" className="bg-[#1a2347] text-emerald-400">Hadir</option>
-                        <option value="Sakit" className="bg-[#1a2347] text-blue-400">Sakit</option>
-                        <option value="Izin" className="bg-[#1a2347] text-amber-400">Izin</option>
-                        <option value="Alpa" className="bg-[#1a2347] text-red-400">Alpa</option>
+                        <option
+                          value="Hadir"
+                          className="bg-[#1a2347] text-emerald-400"
+                        >
+                          Hadir
+                        </option>
+                        <option
+                          value="Sakit"
+                          className="bg-[#1a2347] text-blue-400"
+                        >
+                          Sakit
+                        </option>
+                        <option
+                          value="Izin"
+                          className="bg-[#1a2347] text-amber-400"
+                        >
+                          Izin
+                        </option>
+                        <option
+                          value="Alpa"
+                          className="bg-[#1a2347] text-red-400"
+                        >
+                          Alpa
+                        </option>
                       </select>
                     </td>
                   </tr>
