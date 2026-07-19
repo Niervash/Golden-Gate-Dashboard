@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { Html5Qrcode } from "html5-qrcode";
 
 interface AttendanceRecord {
   id: string;
@@ -51,13 +52,28 @@ export const AttendanceManagementDashboard = () => {
   const [qrCodeInput, setQrCodeInput] = useState("");
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  
+  // Camera scanning states
+  const [hasCameraError, setHasCameraError] = useState(false);
+  const [cameraErrorMessage, setCameraErrorMessage] = useState("");
+  const qrScannerRef = useRef<Html5Qrcode | null>(null);
+
+  // Sync state with refs to avoid stale closures in camera callback
+  const isSoundEnabledRef = useRef(isSoundEnabled);
+  useEffect(() => {
+    isSoundEnabledRef.current = isSoundEnabled;
+  }, [isSoundEnabled]);
+
+  const attendanceListRef = useRef(attendanceList);
+  useEffect(() => {
+    attendanceListRef.current = attendanceList;
+  }, [attendanceList]);
 
   const today = format(new Date(), "EEEE, dd MMMM yyyy", { locale: id });
 
-  // Scan simulation helper
-  const handleScanCard = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!qrCodeInput.trim()) return;
+  // Main attendance processor
+  const processAttendance = (qrInput: string) => {
+    if (!qrInput.trim()) return;
 
     // Search in student database (mocking a check)
     const mockStudentDatabase = [
@@ -71,11 +87,11 @@ export const AttendanceManagementDashboard = () => {
       { nis: "2023007", nama: "Gaby Anastasia", kelas: "X-1" }
     ];
 
-    const student = mockStudentDatabase.find(s => s.nis === qrCodeInput.trim() || s.nama.toLowerCase().includes(qrCodeInput.toLowerCase()));
+    const student = mockStudentDatabase.find(s => s.nis === qrInput.trim() || s.nama.toLowerCase().includes(qrInput.toLowerCase()));
 
     if (student) {
       // Play beep sound if enabled
-      if (isSoundEnabled) {
+      if (isSoundEnabledRef.current) {
         try {
           const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
           const oscillator = audioCtx.createOscillator();
@@ -91,7 +107,7 @@ export const AttendanceManagementDashboard = () => {
       }
 
       // Check if already scanned today
-      const alreadyScanned = attendanceList.find(a => a.nis === student.nis && a.status === "Hadir");
+      const alreadyScanned = attendanceListRef.current.find(a => a.nis === student.nis && a.status === "Hadir");
 
       if (alreadyScanned) {
         setScanResult({
@@ -101,7 +117,7 @@ export const AttendanceManagementDashboard = () => {
       } else {
         const jamSekarang = format(new Date(), "HH:mm");
         const newRecord: AttendanceRecord = {
-          id: String(attendanceList.length + 1),
+          id: String(attendanceListRef.current.length + 1),
           nama: student.nama,
           nis: student.nis,
           kelas: student.kelas,
@@ -112,13 +128,13 @@ export const AttendanceManagementDashboard = () => {
         };
 
         // If student exists but had a different status, update them, otherwise append
-        const existsIndex = attendanceList.findIndex(a => a.nis === student.nis);
+        const existsIndex = attendanceListRef.current.findIndex(a => a.nis === student.nis);
         if (existsIndex >= 0) {
-          const updated = [...attendanceList];
+          const updated = [...attendanceListRef.current];
           updated[existsIndex] = newRecord;
           setAttendanceList(updated);
         } else {
-          setAttendanceList([newRecord, ...attendanceList]);
+          setAttendanceList([newRecord, ...attendanceListRef.current]);
         }
 
         setScanResult({
@@ -133,9 +149,76 @@ export const AttendanceManagementDashboard = () => {
       });
     }
 
-    setQrCodeInput("");
     setTimeout(() => setScanResult(null), 4000);
   };
+
+  // Manual submission helper
+  const handleScanCard = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!qrCodeInput.trim()) return;
+    processAttendance(qrCodeInput);
+    setQrCodeInput("");
+  };
+
+  // Setup real camera scanning effect
+  useEffect(() => {
+    let isMounted = true;
+    if (isScanning) {
+      const timer = setTimeout(() => {
+        if (!isMounted) return;
+        
+        try {
+          const scanner = new Html5Qrcode("qr-reader");
+          qrScannerRef.current = scanner;
+          
+          scanner.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: (width, height) => {
+                const size = Math.min(width, height) * 0.7;
+                return { width: size, height: size };
+              }
+            },
+            (decodedText) => {
+              processAttendance(decodedText);
+            },
+            () => {
+              // Ignore parser errors
+            }
+          ).catch((err) => {
+            console.error("Camera start error:", err);
+            setHasCameraError(true);
+            setCameraErrorMessage(err?.message || "Kamera tidak dapat diakses atau tidak ditemukan.");
+          });
+        } catch (e: any) {
+          console.error("Scanner init error:", e);
+          setHasCameraError(true);
+          setCameraErrorMessage(e?.message || "Inisialisasi kamera gagal.");
+        }
+      }, 300);
+
+      return () => {
+        clearTimeout(timer);
+        isMounted = false;
+        if (qrScannerRef.current) {
+          const scanner = qrScannerRef.current;
+          if (scanner.isScanning) {
+            scanner.stop()
+              .then(() => {
+                qrScannerRef.current = null;
+              })
+              .catch(err => console.error("Failed to stop scanner", err));
+          } else {
+            qrScannerRef.current = null;
+          }
+        }
+      };
+    } else {
+      setHasCameraError(false);
+      setCameraErrorMessage("");
+    }
+  }, [isScanning]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -240,26 +323,41 @@ export const AttendanceManagementDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-[#1a2347]/80 backdrop-blur-xl rounded-3xl border border-[#43424e] p-6">
               {/* Left Column: Viewfinder Simulation */}
               <div className="lg:col-span-2 space-y-4">
-                <div className="relative bg-[#121833] aspect-video sm:aspect-[21/9] lg:aspect-video rounded-2xl overflow-hidden border border-[#43424e]/80 flex flex-col items-center justify-center">
-                  {/* Scanner overlay */}
-                  <div className="absolute inset-0 border-2 border-dashed border-[#d9ab3f]/30 m-4 rounded-xl flex items-center justify-center">
-                    {/* Laser Line */}
-                    <div className="w-full h-0.5 bg-[#d9ab3f] absolute animate-pulse shadow-[0_0_8px_#d9ab3f]" style={{
-                      animation: "scanLine 2.5s infinite ease-in-out"
-                    }} />
+                <div className="relative bg-[#121833] aspect-video w-full rounded-2xl overflow-hidden border border-[#43424e]/80 flex flex-col items-center justify-center">
+                  
+                  {/* Camera view element */}
+                  {!hasCameraError ? (
+                    <div id="qr-reader" className="absolute inset-0 w-full h-full z-0 overflow-hidden rounded-2xl" />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-red-950/20">
+                      <AlertCircle size={40} className="text-red-400 mb-2" />
+                      <p className="text-sm font-semibold text-white">Gagal Mengakses Kamera</p>
+                      <p className="text-xs text-red-300 mt-1 max-w-md">{cameraErrorMessage}</p>
+                    </div>
+                  )}
 
-                    {/* Corner Reticles */}
-                    <div className="absolute top-2 left-2 w-6 h-6 border-t-4 border-l-4 border-[#d9ab3f] rounded-tl-md" />
-                    <div className="absolute top-2 right-2 w-6 h-6 border-t-4 border-r-4 border-[#d9ab3f] rounded-tr-md" />
-                    <div className="absolute bottom-2 left-2 w-6 h-6 border-b-4 border-l-4 border-[#d9ab3f] rounded-bl-md" />
-                    <div className="absolute bottom-2 right-2 w-6 h-6 border-b-4 border-r-4 border-[#d9ab3f] rounded-br-md" />
-                  </div>
+                  {/* Scanner overlay */}
+                  {!hasCameraError && (
+                    <div className="absolute inset-0 border-2 border-dashed border-[#d9ab3f]/30 m-4 rounded-xl flex items-center justify-center pointer-events-none z-10">
+                      {/* Laser Line */}
+                      <div className="w-full h-0.5 bg-[#d9ab3f] absolute animate-pulse shadow-[0_0_8px_#d9ab3f]" style={{
+                        animation: "scanLine 2.5s infinite ease-in-out"
+                      }} />
+
+                      {/* Corner Reticles */}
+                      <div className="absolute top-2 left-2 w-6 h-6 border-t-4 border-l-4 border-[#d9ab3f] rounded-tl-md" />
+                      <div className="absolute top-2 right-2 w-6 h-6 border-t-4 border-r-4 border-[#d9ab3f] rounded-tr-md" />
+                      <div className="absolute bottom-2 left-2 w-6 h-6 border-b-4 border-l-4 border-[#d9ab3f] rounded-bl-md" />
+                      <div className="absolute bottom-2 right-2 w-6 h-6 border-b-4 border-r-4 border-[#d9ab3f] rounded-br-md" />
+                    </div>
+                  )}
 
                   {/* Finder HUD */}
-                  <div className="absolute top-6 right-6 flex gap-2">
+                  <div className="absolute top-6 right-6 flex gap-2 z-20">
                     <button 
+                      type="button"
                       onClick={() => setIsSoundEnabled(!isSoundEnabled)} 
-                      className="p-2 bg-black/40 rounded-lg text-white hover:bg-black/60 transition-all"
+                      className="p-2 bg-black/40 rounded-lg text-white hover:bg-black/60 transition-all cursor-pointer"
                     >
                       {isSoundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
                     </button>
@@ -268,11 +366,14 @@ export const AttendanceManagementDashboard = () => {
                     </span>
                   </div>
 
-                  <div className="text-center z-10 p-4">
-                    <Scan size={44} className="text-[#d9ab3f]/60 mx-auto mb-2 animate-bounce" />
-                    <p className="text-sm font-semibold text-white">Letakkan QR Code Kartu di Depan Kamera</p>
-                    <p className="text-xs text-slate-400 mt-1">Sistem akan memverifikasi dan mencatat waktu masuk siswa secara otomatis</p>
-                  </div>
+                  {/* Instruction text overlay */}
+                  {!hasCameraError && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/65 backdrop-blur-md px-4 py-2 rounded-xl text-center z-20 max-w-[90%] pointer-events-none border border-[#d9ab3f]/20">
+                      <p className="text-xs font-semibold text-white flex items-center gap-1.5 justify-center">
+                        <Scan size={14} className="text-[#d9ab3f] animate-pulse" /> Arahkan QR Code Kartu Siswa ke Kamera
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -506,6 +607,22 @@ export const AttendanceManagementDashboard = () => {
           0% { top: 5%; }
           50% { top: 95%; }
           100% { top: 5%; }
+        }
+        #qr-reader {
+          border: none !important;
+          background: transparent !important;
+        }
+        #qr-reader video {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          border-radius: 1rem;
+        }
+        #qr-reader__scan_region {
+          background: transparent !important;
+        }
+        #qr-reader__dashboard {
+          display: none !important;
         }
       `}</style>
     </div>
