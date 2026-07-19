@@ -170,8 +170,8 @@ const MainSidebar: React.FC = () => {
   /* ---- role filter ---- */
   const allowedAdmin: Record<string, string[]> = {
     admin: ["students", "teachers", "academic", "sapras", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan", "student-cards"],
-    kepsek: ["students", "teachers", "academic", "sapras", "schedule", "attendance", "achievements", "reports", "lesson-plan", "student-cards"],
-    guru: ["students", "academic", "schedule", "attendance", "grades", "lesson-plan"],
+    kepsek: ["academic", "sapras", "schedule", "attendance", "achievements", "reports", "lesson-plan"],
+    guru: ["academic", "schedule", "attendance", "grades", "lesson-plan"],
   };
   const allowedMore: Record<string, string[]> = {
     admin: ["announcements", "archives", "settings", "help"],

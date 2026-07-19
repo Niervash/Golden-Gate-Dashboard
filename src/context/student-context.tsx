@@ -288,6 +288,7 @@ export const StudentProvider = ({ children }: { children: React.ReactNode }) => 
         count: parsed.length,
       };
       applyImport(parsed, src);
+      localStorage.setItem("local_gsheets_url", targetUrl);
       if (url) setGsheetsUrl(url);
     } catch {
       setImportStatus("error");
@@ -303,15 +304,20 @@ export const StudentProvider = ({ children }: { children: React.ReactNode }) => 
   useEffect(() => {
     if (hasSyncedOnMount.current) return;
     hasSyncedOnMount.current = true;
-    if (saved.source?.type === "gsheets" && saved.source.label) {
-      // Silent background refresh — don't show loading spinner on first paint
-      const sheetUrl = saved.source.label;
-      const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    
+    // Load local spreadsheet link if exists in local storage
+    const savedLink = localStorage.getItem("local_gsheets_url");
+    const activeUrl = savedLink || (saved.source?.type === "gsheets" ? saved.source.label : "");
+    
+    if (activeUrl) {
+      const match = activeUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
       if (match) {
         const sheetId = match[1];
-        const gidMatch = sheetUrl.match(/[#&?]gid=(\d+)/);
+        const gidMatch = activeUrl.match(/[#&?]gid=(\d+)/);
         const gid = gidMatch ? gidMatch[1] : "0";
         const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+        
+        // Background refresh from stored sheet URL
         fetch(csvUrl)
           .then((res) => res.ok ? res.text() : Promise.reject(res.status))
           .then((text) => {
@@ -320,7 +326,19 @@ export const StudentProvider = ({ children }: { children: React.ReactNode }) => 
             const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
             const parsed = parseRows(rows);
             if (parsed.length > 0) {
-              applyImport(parsed, { type: "gsheets", label: sheetUrl, importedAt: new Date().toISOString(), count: parsed.length });
+              const now = new Date().toISOString();
+              const newSource: SpreadsheetSource = {
+                type: "gsheets",
+                label: activeUrl,
+                importedAt: now,
+                count: parsed.length,
+              };
+              setStudents(parsed);
+              setSource(newSource);
+              setLastSyncAt(now);
+              localStorage.setItem(LS_KEY_STUDENTS, JSON.stringify(parsed));
+              localStorage.setItem(LS_KEY_SOURCE, JSON.stringify(newSource));
+              localStorage.setItem("local_gsheets_url", activeUrl);
             }
           })
           .catch(() => { /* silently fail on background sync */ });
@@ -353,16 +371,30 @@ export const StudentProvider = ({ children }: { children: React.ReactNode }) => 
     setGsheetsUrl("");
     localStorage.removeItem(LS_KEY_STUDENTS);
     localStorage.removeItem(LS_KEY_SOURCE);
+    localStorage.removeItem("local_gsheets_url");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
   const addOrUpdateStudent = useCallback((student: Student) => {
     setStudents((prev) => {
-      const exists = prev.findIndex((s) => s.id === student.id);
-      const next = exists >= 0
-        ? prev.map((s) => (s.id === student.id ? student : s))
-        : [...prev, student];
-      persist(next, source);
+      const exists = prev.findIndex((s) => s.id === student.id || (s.nis === student.nis && s.nis !== "-"));
+      let next;
+      if (exists >= 0) {
+        next = prev.map((s, idx) => idx === exists ? { ...s, ...student } : s);
+      } else {
+        next = [...prev, student];
+      }
+      
+      const newSource: SpreadsheetSource = source || {
+        type: "manual",
+        label: localStorage.getItem("local_gsheets_url") || "Local Database",
+        importedAt: new Date().toISOString(),
+        count: next.length
+      };
+      newSource.count = next.length;
+      
+      persist(next, newSource);
+      setSource(newSource);
       return next;
     });
   }, [source]);
@@ -370,7 +402,9 @@ export const StudentProvider = ({ children }: { children: React.ReactNode }) => 
   const removeStudent = useCallback((id: string) => {
     setStudents((prev) => {
       const next = prev.filter((s) => s.id !== id);
-      persist(next, source);
+      const newSource = source ? { ...source, count: next.length } : null;
+      persist(next, newSource);
+      setSource(newSource);
       return next;
     });
   }, [source]);

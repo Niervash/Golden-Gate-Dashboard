@@ -98,8 +98,6 @@ export const roleMenuConfig: Record<UserRole, string[]> = {
   ],
   kepsek: [
     "/dashboard",
-    "/dashboard/siswa",
-    "/dashboard/guru",
     "/dashboard/akademik",
     "/dashboard/prestasi",
     "/dashboard/pengumuman",
@@ -107,7 +105,6 @@ export const roleMenuConfig: Record<UserRole, string[]> = {
   ],
   guru: [
     "/dashboard",
-    "/dashboard/siswa",
     "/dashboard/jadwal",
     "/dashboard/absensi",
     "/dashboard/penilaian",

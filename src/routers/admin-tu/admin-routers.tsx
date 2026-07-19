@@ -73,9 +73,9 @@ const AdminRouters: React.FC = () => {
           <Route path="principal" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><PrincipalPage /></PageWrapper></RoleGuard>} />
           <Route path="lesson-plan" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><LessonPlanPage /></PageWrapper></RoleGuard>} />
           
-          <Route path="students" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><StudentsPage /></PageWrapper></RoleGuard>} />
-          <Route path="student-cards" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><StudentCardsPage /></PageWrapper></RoleGuard>} />
-          <Route path="teachers" element={<RoleGuard allowedRoles={["admin", "kepsek"]}><PageWrapper><TeachersPage /></PageWrapper></RoleGuard>} />
+          <Route path="students" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><StudentsPage /></PageWrapper></RoleGuard>} />
+          <Route path="student-cards" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><StudentCardsPage /></PageWrapper></RoleGuard>} />
+          <Route path="teachers" element={<RoleGuard allowedRoles={["admin"]}><PageWrapper><TeachersPage /></PageWrapper></RoleGuard>} />
           <Route path="academic" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><AcademicPage /></PageWrapper></RoleGuard>} />
           <Route path="schedule" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><SchedulePage /></PageWrapper></RoleGuard>} />
           <Route path="attendance" element={<RoleGuard allowedRoles={["admin", "kepsek", "guru"]}><PageWrapper><AttendancePage /></PageWrapper></RoleGuard>} />

@@ -283,8 +283,8 @@ const AdminHeader: React.FC = () => {
   // Allowed keys based on role
   const allowedAdminKeys: Record<string, string[]> = {
     admin: ["students", "teachers", "academic", "sapras", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan"],
-    kepsek: ["students", "teachers", "academic", "sapras", "schedule", "achievements", "reports", "lesson-plan"],
-    guru: ["students", "academic", "schedule", "attendance", "grades", "lesson-plan"],
+    kepsek: ["academic", "sapras", "schedule", "achievements", "reports", "lesson-plan"],
+    guru: ["academic", "schedule", "attendance", "grades", "lesson-plan"],
   };
 
   const allowedMoreKeys: Record<string, string[]> = {

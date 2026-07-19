@@ -73,6 +73,7 @@ export const StudentManagementDashboard = () => {
   const [filterStatus, setFilterStatus] = useState("Semua");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [showImportPanel, setShowImportPanel] = useState(students.length === 0);
   const [spreadsheetMode, setSpreadsheetMode] = useState<SpreadsheetMode>("gsheets");
 
@@ -197,6 +198,15 @@ export const StudentManagementDashboard = () => {
             style={{ borderColor: COLORS.grayMedium, color: COLORS.primary }}
           >
             <QrCode size={14} /> Generate QR
+          </button>
+          <button
+            onClick={() => { setSelectedStudent(null); setIsModalOpen(true); setIsEditMode(true); }}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+            style={{ backgroundColor: COLORS.accent, borderColor: COLORS.accent }}
+            title="Tambah data siswa baru secara langsung"
+          >
+            <Plus size={15} />
+            Tambah Siswa
           </button>
           <button
             onClick={() => setShowImportPanel((v) => !v)}
@@ -535,11 +545,18 @@ export const StudentManagementDashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => { setSelectedStudent(student); setIsModalOpen(true); }}
+                          onClick={() => { setSelectedStudent(student); setIsModalOpen(true); setIsEditMode(false); }}
                           className="p-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                           title="Lihat Detail"
                         >
                           <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => { setSelectedStudent(student); setIsModalOpen(true); setIsEditMode(true); }}
+                          className="p-1.5 rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                          title="Edit Siswa"
+                        >
+                          <Edit size={16} />
                         </button>
                         <button
                           onClick={() => navigate("/dashboard/student-cards")}
@@ -594,9 +611,9 @@ export const StudentManagementDashboard = () => {
         </div>
       </div>
 
-      {/* Detail Modal */}
+      {/* Detail & Edit/Add Modal */}
       <AnimatePresence>
-        {isModalOpen && selectedStudent && (
+        {isModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
@@ -608,11 +625,13 @@ export const StudentManagementDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold bg-white/20 border-2 border-white/30">
-                        {selectedStudent.namaLengkap.charAt(0)}
+                        {selectedStudent ? selectedStudent.namaLengkap.charAt(0) : "S"}
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold">{selectedStudent.namaLengkap}</h2>
-                        <p className="text-sm opacity-90">{selectedStudent.nis} • {selectedStudent.kelas} {selectedStudent.jurusan ? `(${selectedStudent.jurusan})` : ""}</p>
+                        <h2 className="text-xl font-bold">{selectedStudent ? selectedStudent.namaLengkap : "Tambah Siswa Baru"}</h2>
+                        <p className="text-sm opacity-90">
+                          {selectedStudent ? `${selectedStudent.nis} • ${selectedStudent.kelas}` : "Input data siswa secara manual"}
+                        </p>
                       </div>
                     </div>
                     <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
@@ -621,67 +640,187 @@ export const StudentManagementDashboard = () => {
                   </div>
                 </div>
 
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
-                    <h3 className="text-lg font-bold" style={{ color: COLORS.primary }}>Detail Informasi Siswa</h3>
-                    {getStatusBadge(selectedStudent.status)}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-5">
-                      <div>
-                        <h4 className="text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2" style={{ color: COLORS.accentLight }}>
-                          <User size={14} /> Data Pribadi
-                        </h4>
-                        <div className="space-y-3">
-                          {selectedStudent.nisn && <div><p className="text-xs text-gray-500">NISN</p><p className="text-sm font-medium text-gray-900">{selectedStudent.nisn}</p></div>}
-                          {selectedStudent.jenisKelamin && <div><p className="text-xs text-gray-500">Jenis Kelamin</p><p className="text-sm font-medium text-gray-900">{selectedStudent.jenisKelamin === "L" ? "Laki-laki" : selectedStudent.jenisKelamin === "P" ? "Perempuan" : selectedStudent.jenisKelamin}</p></div>}
-                          {(selectedStudent.tempatLahir || selectedStudent.tanggalLahir) && (
-                            <div><p className="text-xs text-gray-500">Tempat, Tanggal Lahir</p>
-                              <p className="text-sm font-medium text-gray-900 flex items-center gap-1"><MapPin size={12} className="text-gray-400" /> {selectedStudent.tempatLahir || ""}{selectedStudent.tempatLahir && selectedStudent.tanggalLahir ? ", " : ""}{formatDate(selectedStudent.tanggalLahir)}</p>
-                            </div>
-                          )}
-                          {selectedStudent.alamat && <div><p className="text-xs text-gray-500">Alamat</p><p className="text-sm font-medium text-gray-900 leading-snug">{selectedStudent.alamat}</p></div>}
-                        </div>
+                {isEditMode ? (
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const newStudent: Student = {
+                      id: selectedStudent?.id || `manual-${Date.now()}`,
+                      nis: formData.get("nis") as string,
+                      nisn: formData.get("nisn") as string || undefined,
+                      namaLengkap: formData.get("namaLengkap") as string,
+                      kelas: formData.get("kelas") as string,
+                      jurusan: formData.get("jurusan") as string || undefined,
+                      jenisKelamin: formData.get("jenisKelamin") as string || undefined,
+                      status: formData.get("status") as string || "Aktif",
+                      tanggalLahir: formData.get("tanggalLahir") as string || undefined,
+                      tempatLahir: formData.get("tempatLahir") as string || undefined,
+                      alamat: formData.get("alamat") as string || undefined,
+                      noTelp: formData.get("noTelp") as string || undefined,
+                      email: formData.get("email") as string || undefined,
+                      namaWali: formData.get("namaWali") as string || undefined,
+                      pekerjaanWali: formData.get("pekerjaanWali") as string || undefined,
+                      noTelpWali: formData.get("noTelpWali") as string || undefined,
+                    };
+                    const { addOrUpdateStudent } = useStudents();
+                    // trigger direct update
+                    addOrUpdateStudent(newStudent);
+                    setIsModalOpen(false);
+                    // show success alert or refresh
+                  }} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <h3 className="text-lg font-bold pb-2 border-b border-gray-100" style={{ color: COLORS.primary }}>Form Data Siswa</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Nama Lengkap *</label>
+                        <input type="text" name="namaLengkap" defaultValue={selectedStudent?.namaLengkap || ""} required className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">NIS (Nomor Induk Siswa) *</label>
+                        <input type="text" name="nis" defaultValue={selectedStudent?.nis || ""} required className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">NISN</label>
+                        <input type="text" name="nisn" defaultValue={selectedStudent?.nisn || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Kelas *</label>
+                        <input type="text" name="kelas" placeholder="Contoh: X-1" defaultValue={selectedStudent?.kelas || ""} required className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Jurusan</label>
+                        <input type="text" name="jurusan" placeholder="Contoh: MIPA / IPS" defaultValue={selectedStudent?.jurusan || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Jenis Kelamin</label>
+                        <select name="jenisKelamin" defaultValue={selectedStudent?.jenisKelamin || "L"} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none">
+                          <option value="L">Laki-laki (L)</option>
+                          <option value="P">Perempuan (P)</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Status</label>
+                        <select name="status" defaultValue={selectedStudent?.status || "Aktif"} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none">
+                          <option value="Aktif">Aktif</option>
+                          <option value="Alumni">Alumni</option>
+                          <option value="Pindah">Pindah</option>
+                          <option value="Cuti">Cuti</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Tanggal Lahir</label>
+                        <input type="date" name="tanggalLahir" defaultValue={selectedStudent?.tanggalLahir || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Tempat Lahir</label>
+                        <input type="text" name="tempatLahir" defaultValue={selectedStudent?.tempatLahir || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">No. Telepon</label>
+                        <input type="text" name="noTelp" defaultValue={selectedStudent?.noTelp || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Email</label>
+                        <input type="email" name="email" defaultValue={selectedStudent?.email || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
                       </div>
                     </div>
-                    <div className="space-y-5">
-                      <div>
-                        <h4 className="text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2" style={{ color: COLORS.accentLight }}>
-                          <Phone size={14} /> Kontak
-                        </h4>
-                        <div className="space-y-3">
-                          {selectedStudent.noTelp && <div><p className="text-xs text-gray-500">No. Telepon</p><p className="text-sm font-medium text-gray-900">{selectedStudent.noTelp}</p></div>}
-                          {selectedStudent.email && <div><p className="text-xs text-gray-500">Email</p><p className="text-sm font-medium text-gray-900">{selectedStudent.email}</p></div>}
-                        </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-gray-700">Alamat</label>
+                      <textarea name="alamat" defaultValue={selectedStudent?.alamat || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none h-20 resize-none"></textarea>
+                    </div>
+
+                    <h4 className="text-xs uppercase tracking-wider font-semibold pt-4 border-t border-gray-100 flex items-center gap-2" style={{ color: COLORS.accentLight }}>
+                      <Users size={14} /> Data Orang Tua / Wali
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Nama Wali</label>
+                        <input type="text" name="namaWali" defaultValue={selectedStudent?.namaWali || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
                       </div>
-                      {(selectedStudent.namaWali || selectedStudent.pekerjaanWali || selectedStudent.noTelpWali) && (
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">Pekerjaan Wali</label>
+                        <input type="text" name="pekerjaanWali" defaultValue={selectedStudent?.pekerjaanWali || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-gray-700">No. Telepon Wali</label>
+                        <input type="text" name="noTelpWali" defaultValue={selectedStudent?.noTelpWali || ""} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none" />
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 border-t flex justify-end items-center gap-3">
+                      <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium">
+                        Batal
+                      </button>
+                      <button type="submit" className="px-4 py-2 rounded-lg text-white transition-colors text-sm font-medium flex items-center gap-2 shadow-sm hover:opacity-90" style={{ backgroundColor: COLORS.accent }}>
+                        Simpan Data
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                      <h3 className="text-lg font-bold" style={{ color: COLORS.primary }}>Detail Informasi Siswa</h3>
+                      {getStatusBadge(selectedStudent?.status)}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-5">
                         <div>
                           <h4 className="text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2" style={{ color: COLORS.accentLight }}>
-                            <Users size={14} /> Data Orang Tua/Wali
+                            <User size={14} /> Data Pribadi
                           </h4>
-                          <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            {selectedStudent.namaWali && <div><p className="text-xs text-gray-500">Nama Wali</p><p className="text-sm font-medium text-gray-900">{selectedStudent.namaWali}</p></div>}
-                            {selectedStudent.pekerjaanWali && <div><p className="text-xs text-gray-500">Pekerjaan</p><p className="text-sm font-medium text-gray-900 flex items-center gap-1"><Briefcase size={12} className="text-gray-400" /> {selectedStudent.pekerjaanWali}</p></div>}
-                            {selectedStudent.noTelpWali && <div><p className="text-xs text-gray-500">No. Telepon Wali</p><p className="text-sm font-medium text-gray-900">{selectedStudent.noTelpWali}</p></div>}
+                          <div className="space-y-3">
+                            {selectedStudent?.nisn && <div><p className="text-xs text-gray-500">NISN</p><p className="text-sm font-medium text-gray-900">{selectedStudent.nisn}</p></div>}
+                            {selectedStudent?.jenisKelamin && <div><p className="text-xs text-gray-500">Jenis Kelamin</p><p className="text-sm font-medium text-gray-900">{selectedStudent.jenisKelamin === "L" ? "Laki-laki" : selectedStudent.jenisKelamin === "P" ? "Perempuan" : selectedStudent.jenisKelamin}</p></div>}
+                            {(selectedStudent?.tempatLahir || selectedStudent?.tanggalLahir) && (
+                              <div><p className="text-xs text-gray-500">Tempat, Tanggal Lahir</p>
+                                <p className="text-sm font-medium text-gray-900 flex items-center gap-1"><MapPin size={12} className="text-gray-400" /> {selectedStudent.tempatLahir || ""}{selectedStudent.tempatLahir && selectedStudent.tanggalLahir ? ", " : ""}{formatDate(selectedStudent.tanggalLahir)}</p>
+                              </div>
+                            )}
+                            {selectedStudent?.alamat && <div><p className="text-xs text-gray-500">Alamat</p><p className="text-sm font-medium text-gray-900 leading-snug">{selectedStudent.alamat}</p></div>}
                           </div>
                         </div>
-                      )}
+                      </div>
+                      <div className="space-y-5">
+                        <div>
+                          <h4 className="text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2" style={{ color: COLORS.accentLight }}>
+                            <Phone size={14} /> Kontak
+                          </h4>
+                          <div className="space-y-3">
+                            {selectedStudent?.noTelp && <div><p className="text-xs text-gray-500">No. Telepon</p><p className="text-sm font-medium text-gray-900">{selectedStudent.noTelp}</p></div>}
+                            {selectedStudent?.email && <div><p className="text-xs text-gray-500">Email</p><p className="text-sm font-medium text-gray-900">{selectedStudent.email}</p></div>}
+                          </div>
+                        </div>
+                        {(selectedStudent?.namaWali || selectedStudent?.pekerjaanWali || selectedStudent?.noTelpWali) && (
+                          <div>
+                            <h4 className="text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2" style={{ color: COLORS.accentLight }}>
+                              <Users size={14} /> Data Orang Tua/Wali
+                            </h4>
+                            <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                              {selectedStudent?.namaWali && <div><p className="text-xs text-gray-500">Nama Wali</p><p className="text-sm font-medium text-gray-900">{selectedStudent.namaWali}</p></div>}
+                              {selectedStudent?.pekerjaanWali && <div><p className="text-xs text-gray-500">Pekerjaan</p><p className="text-sm font-medium text-gray-900 flex items-center gap-1"><Briefcase size={12} className="text-gray-400" /> {selectedStudent.pekerjaanWali}</p></div>}
+                              {selectedStudent?.noTelpWali && <div><p className="text-xs text-gray-500">No. Telepon Wali</p><p className="text-sm font-medium text-gray-900">{selectedStudent.noTelpWali}</p></div>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-gray-50 border-t flex justify-between items-center gap-3 mt-6">
+                      <button
+                        onClick={() => { setIsModalOpen(false); navigate("/dashboard/student-cards"); }}
+                        className="px-4 py-2 rounded-lg text-white transition-colors text-sm font-medium flex items-center gap-2 shadow-sm hover:opacity-90"
+                        style={{ backgroundColor: COLORS.primary }}
+                      >
+                        <QrCode size={15} /> Generate QR Code
+                      </button>
+                      <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium">
+                        Tutup
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="p-4 bg-gray-50 border-t flex justify-between items-center gap-3">
-                  <button
-                    onClick={() => { setIsModalOpen(false); navigate("/dashboard/student-cards"); }}
-                    className="px-4 py-2 rounded-lg text-white transition-colors text-sm font-medium flex items-center gap-2 shadow-sm hover:opacity-90"
-                    style={{ backgroundColor: COLORS.primary }}
-                  >
-                    <QrCode size={15} /> Generate QR Code
-                  </button>
-                  <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium">
-                    Tutup
-                  </button>
-                </div>
+                )}
               </motion.div>
             </div>
           </div>
