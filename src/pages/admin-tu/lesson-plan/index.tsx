@@ -66,9 +66,59 @@ const LESSON_PLANS = [
     url: "https://docs.google.com/spreadsheets/d/1sWKcHJ17XfI5omf8EuQTlfHFSacgTYio/edit?gid=1969637497#gid=1969637497",
   },
   {
-    value: "sir-julian-g3",
-    label: "SIR JULIAN - GRADE 3",
-    url: "https://docs.google.com/spreadsheets/d/1sWKcHJ17XfI5omf8EuQTlfHFSacgTYio/edit?gid=1969637497#gid=1969637497",
+    value: "sir-julian-pra-g1",
+    label: "PRAKARYA SIR JULIAN - GRADE 1",
+    url: "https://docs.google.com/spreadsheets/d/1dJgNdEUX0Z493GFXzSoPC5aSgtAA5QUY/edit?gid=452719570#gid=452719570",
+  },
+  {
+    value: "sir-julian-pra-g2",
+    label: "PRAKARYA SIR JULIAN - GRADE 2",
+    url: "https://docs.google.com/spreadsheets/d/1Jn2c32Da_JIHy4XSQ4P-N5xoi5sjgq4A/edit?gid=183717813#gid=183717813",
+  },
+  {
+    value: "sir-julian-pra-g3",
+    label: "PRAKARYA SIR JULIAN - GRADE 3",
+    url: "https://docs.google.com/spreadsheets/d/1nwwHG-Xrljjykdd8dQ0JgNy0oOzK38oH/edit?gid=309448220#gid=309448220",
+  },
+  {
+    value: "sir-ikal-eng-g1",
+    label: "ENGLISH SIR IKAL - GRADE 1",
+    url: "https://docs.google.com/spreadsheets/d/1XyrVqNrSYf_51bkyI9c3IDt6pJaISoDu/edit?gid=471877080#gid=471877080",
+  },
+  {
+    value: "sir-ikal-eng-g2",
+    label: "ENGLISH SIR IKAL - GRADE 2",
+    url: "https://docs.google.com/spreadsheets/d/1A-tbmlcfQBmDJhDyh_aPmZp0H90ij24c/edit?gid=471877080#gid=471877080",
+  },
+  {
+    value: "sir-ikal-eng-g3",
+    label: "ENGLISH SIR IKAL - GRADE 3",
+    url: "https://docs.google.com/spreadsheets/d/1DF01TvLzUpb7jaaubUA6NopD2eK4unFB/edit?gid=471877080#gid=471877080",
+  },
+  {
+    value: "sir-ikal-coms-g",
+    label: "PRAKARYA SIR IKAL - GRADE ",
+    url: "https://docs.google.com/spreadsheets/d/1Hk3T6I-FvyNDXVPHRfhxnFYx77_8e9cy/edit?gid=471877080#gid=471877080",
+  },
+  {
+    value: "ms-mirfads-Biology-g1",
+    label: "Biology MS Mirfads - GRADE 2",
+    url: "https://docs.google.com/spreadsheets/d/1k4nDoKJ7FU8zToz5IhKZW8jQ9qvNb9R-/edit?gid=2080811428#gid=2080811428",
+  },
+  {
+    value: "ms-mirfads-Biology-g2",
+    label: "Biology MS Mirfads - GRADE 2",
+    url: "https://docs.google.com/spreadsheets/d/1skcE18QKBIvoCngJug8O4mptV3VKkju7/edit?gid=2080811428#gid=2080811428",
+  },
+  {
+    value: "ms-mirfads-Biology-g3",
+    label: "Biology MS Mirfads - GRADE 3",
+    url: "https://docs.google.com/spreadsheets/d/1HDsyRcbijtIFWd2G9OawpR9VRtwAoCer/edit?gid=2080811428#gid=2080811428",
+  },
+  {
+    value: "ms-bulan-math",
+    label: "MATH MS bulan - GRADE ",
+    url: "https://docs.google.com/spreadsheets/d/1NobvrSPLCQPWCUKAskO2vDqFnl-z4P6D/edit?gid=766317703#gid=766317703",
   },
 ];
 
