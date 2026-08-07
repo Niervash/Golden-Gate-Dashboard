@@ -38,33 +38,20 @@ const LoginBranding: React.FC<props> = () => {
 
   return (
     <div
-      className="hidden lg:flex lg:w-1/2 relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, #23305d 0%, #1a2449 50%, #151e3d 100%)",
-      }}
+      className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50 border-r border-slate-200"
     >
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-40">
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle at 20px 20px, rgba(217, 171, 63, 0.15) 1px, transparent 0)`,
-            backgroundSize: "40px 40px",
+            backgroundImage: `radial-gradient(circle at 20px 20px, rgba(35, 48, 93, 0.05) 1px, transparent 0)`,
+            backgroundSize: "32px 32px",
           }}
         />
       </div>
 
-      {/* Golden Accent Pattern */}
-      <div
-        className="absolute inset-0 opacity-3"
-        style={{
-          backgroundImage: `linear-gradient(45deg, #d9ab3f 25%, transparent 25%, transparent 50%, #d9ab3f 50%, #d9ab3f 75%, transparent 75%, transparent)`,
-          backgroundSize: "60px 60px",
-        }}
-      />
-
-      {/* Animated Background Elements */}
+      {/* Animated Background Light Glows */}
       <motion.div
         animate={{
           y: [0, -20, 0],
@@ -75,10 +62,10 @@ const LoginBranding: React.FC<props> = () => {
           repeat: Infinity,
           ease: "easeInOut",
         }}
-        className="absolute top-1/4 left-10 w-64 h-64 rounded-full blur-2xl"
+        className="absolute top-1/4 left-10 w-72 h-72 rounded-full blur-3xl opacity-60"
         style={{
           background:
-            "radial-gradient(circle, rgba(217, 171, 63, 0.1) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(217, 171, 63, 0.2) 0%, transparent 70%)",
         }}
       />
       <motion.div
@@ -92,14 +79,14 @@ const LoginBranding: React.FC<props> = () => {
           ease: "easeInOut",
           delay: 1,
         }}
-        className="absolute bottom-1/4 right-10 w-72 h-72 rounded-full blur-2xl"
+        className="absolute bottom-1/4 right-10 w-80 h-80 rounded-full blur-3xl opacity-50"
         style={{
           background:
-            "radial-gradient(circle, rgba(175, 145, 81, 0.08) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(35, 48, 93, 0.08) 0%, transparent 70%)",
         }}
       />
 
-      <div className="relative z-10 flex flex-col justify-center items-center w-full p-8">
+      <div className="relative z-10 flex flex-col justify-center items-center w-full p-10">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -110,25 +97,21 @@ const LoginBranding: React.FC<props> = () => {
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="w-24 h-24 mx-auto mb-6 rounded-full shadow-lg flex items-center justify-center"
-            style={{
-              background: "linear-gradient(135deg, #23305d 0%, #1a2449 100%)",
-              border: "2px solid #d9ab3f",
-            }}
+            className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-white shadow-md border border-slate-200 p-2 flex items-center justify-center"
           >
             <img
               src={ILoveGGS}
               alt="Logo Golden Gate School"
-              className="w-20 h-20 md:w-20 md:h-20"
+              className="w-full h-full object-contain"
             />
           </motion.div>
 
           {/* School Name */}
-          <h1 className="text-2xl font-bold mb-2" style={{ color: "#ffffff" }}>
-            GOLDEN <span style={{ color: "#d9ab3f" }}>GATE</span> SCHOOL
+          <h1 className="text-2xl font-black mb-1 text-[#23305d] tracking-tight">
+            GOLDEN <span className="text-[#d9ab3f]">GATE</span> SCHOOL
           </h1>
 
-          <p className="text-sm mb-6 font-normal" style={{ color: "#af9151" }}>
+          <p className="text-xs mb-6 font-bold uppercase tracking-widest text-slate-500">
             Unggul • Berkarakter • Berprestasi
           </p>
 
@@ -137,15 +120,14 @@ const LoginBranding: React.FC<props> = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-sm mb-8 max-w-xs mx-auto leading-relaxed"
-            style={{ color: "rgba(255, 255, 255, 0.7)" }}
+            className="text-sm mb-8 max-w-xs mx-auto leading-relaxed text-slate-600"
           >
             Sistem Informasi Sekolah terintegrasi yang mendukung pembelajaran
             digital dan manajemen pendidikan modern.
           </motion.p>
 
           {/* Features Grid */}
-          <div className="space-y-3 mb-8">
+          <div className="space-y-2.5 mb-8 text-left">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -154,30 +136,12 @@ const LoginBranding: React.FC<props> = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.08 }}
-                  className="flex items-center gap-3 p-3 rounded-lg transition-all duration-200 hover:shadow-sm group"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(217, 171, 63, 0.08)",
-                  }}
-                  whileHover={{
-                    scale: 1.01,
-                    backgroundColor: "rgba(217, 171, 63, 0.08)",
-                    borderColor: "rgba(217, 171, 63, 0.2)",
-                  }}
+                  className="flex items-center gap-3.5 p-3 rounded-xl bg-white border border-slate-200/80 shadow-xs transition-all hover:border-amber-300 hover:shadow-sm"
                 >
-                  <div
-                    className="p-2 rounded-md transition-transform duration-200 group-hover:scale-105"
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.08)",
-                      color: feature.color,
-                    }}
-                  >
+                  <div className="p-2 rounded-lg bg-amber-50 text-[#d9ab3f] border border-amber-100 flex-shrink-0">
                     <Icon className="w-4 h-4" />
                   </div>
-                  <span
-                    className="text-xs font-medium leading-tight"
-                    style={{ color: "rgba(255, 255, 255, 0.9)" }}
-                  >
+                  <span className="text-xs font-semibold text-slate-700">
                     {feature.text}
                   </span>
                 </motion.div>
@@ -190,83 +154,21 @@ const LoginBranding: React.FC<props> = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mb-8 p-4 rounded-xl"
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.03)",
-              border: "1px solid rgba(217, 171, 63, 0.08)",
-            }}
+            className="mb-8 p-4 rounded-2xl bg-white border border-slate-200 shadow-xs"
           >
             <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div
-                  className="text-lg font-bold mb-1"
-                  style={{ color: "#d9ab3f" }}
-                >
-                  1000+
-                </div>
-                <div
-                  className="text-xs"
-                  style={{ color: "rgba(255, 255, 255, 0.6)" }}
-                >
-                  Siswa
-                </div>
+              <div className="text-center border-r border-slate-100">
+                <div className="text-lg font-black text-[#23305d]">1000+</div>
+                <div className="text-[11px] font-medium text-slate-500">Siswa</div>
+              </div>
+              <div className="text-center border-r border-slate-100">
+                <div className="text-lg font-black text-[#d9ab3f]">150+</div>
+                <div className="text-[11px] font-medium text-slate-500">Guru</div>
               </div>
               <div className="text-center">
-                <div
-                  className="text-lg font-bold mb-1"
-                  style={{ color: "#d9ab3f" }}
-                >
-                  150+
-                </div>
-                <div
-                  className="text-xs"
-                  style={{ color: "rgba(255, 255, 255, 0.6)" }}
-                >
-                  Guru
-                </div>
+                <div className="text-lg font-black text-[#23305d]">98%</div>
+                <div className="text-[11px] font-medium text-slate-500">Kepuasan</div>
               </div>
-              <div className="text-center">
-                <div
-                  className="text-lg font-bold mb-1"
-                  style={{ color: "#d9ab3f" }}
-                >
-                  98%
-                </div>
-                <div
-                  className="text-xs"
-                  style={{ color: "rgba(255, 255, 255, 0.6)" }}
-                >
-                  Kepuasan
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Testimonial */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="pt-6 border-t"
-            style={{ borderColor: "rgba(217, 171, 63, 0.15)" }}
-          >
-            <p
-              className="text-xs italic mb-3 leading-relaxed"
-              style={{ color: "rgba(255, 255, 255, 0.6)" }}
-            >
-              "Sistem ini telah meningkatkan efisiensi administrasi sekolah kami
-              hingga 70%."
-            </p>
-            <div>
-              <p className="text-xs font-semibold" style={{ color: "#d9ab3f" }}>
-                Dr. Ahmad Rahman, S.Pd., M.Pd.
-              </p>
-              <p
-                className="text-xs"
-                style={{ color: "rgba(255, 255, 255, 0.5)" }}
-              >
-                Kepala Sekolah
-              </p>
             </div>
           </motion.div>
 
@@ -275,17 +177,15 @@ const LoginBranding: React.FC<props> = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.8 }}
-            className="mt-6 flex items-center justify-center gap-2 text-xs"
-            style={{ color: "rgba(255, 255, 255, 0.4)" }}
+            className="flex items-center justify-center gap-2 text-xs text-slate-400 font-medium"
           >
-            <Shield className="w-3 h-3" />
-            <span className="text-xs">
-              Sistem terenkripsi dengan keamanan tinggi
-            </span>
+            <Shield className="w-3.5 h-3.5 text-slate-400" />
+            <span>Sistem Terenkripsi & Aman</span>
           </motion.div>
         </motion.div>
       </div>
     </div>
+
   );
 };
 

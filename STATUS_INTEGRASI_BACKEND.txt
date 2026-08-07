@@ -1,0 +1,170 @@
+STATUS INTEGRASI BACKEND - GOLDEN GATE DASHBOARD
+=================================================
+
+PEMBARUAN TERAKHIR: 7 Agustus 2026
+
+Catatan:
+Status di bawah ini didasarkan pada pemanggilan API yang sudah digunakan
+oleh kode frontend. Status "terintegrasi" tidak otomatis berarti server API
+sedang aktif; API tetap perlu dikonfigurasi lewat VITE_API_BASE_URL.
+
+UPDATE AUTHORIZATION (ROLE & HAK AKSES)
+---------------------------------------
+
+[✓] Yang sudah difungsikan di frontend
+
+1. Validasi sesi
+   - Token akses dikirim sebagai Bearer token pada setiap request API.
+   - Sesi yang tersimpan di browser divalidasi ulang melalui /api/auth/me.
+   - Jika sesi tidak valid, token dan data pengguna di browser dihapus.
+
+2. Role akun
+   - Role dari backend dipetakan ke role aplikasi:
+     admin -> Admin TU, kepsek -> Kepala Sekolah,
+     guru -> Guru, siswa -> Siswa (murid).
+   - Halaman login meminta satu identitas akun dan password; staf memakai
+     email, sedangkan siswa dapat memakai NIS atau NISN. Dashboard ditentukan
+     otomatis dari role yang dikirim backend, tanpa memilih role di login.
+   - Request login mengirim identifier serta email kompatibilitas agar tetap
+     dapat diproses backend lama saat server belum direstart.
+   - Guru Mapel dan Wali Kelas masih merupakan role backend yang sama: guru.
+     Penanda wali kelas menggunakan data is_homeroom pada data guru.
+
+   Alur akun guru:
+   - Admin memasukkan profil terlebih dahulu pada Data Guru.
+   - Tombol "Aktifkan Akun" membuat akun login dengan role guru memakai
+     email pada profil guru dan password awal dari admin.
+   - Wali Kelas ditetapkan setelahnya melalui tombol "Set Wali Kelas";
+     akun tetap login sebagai guru dengan hak data wali kelas tambahan.
+
+3. Protected Route
+   - Aplikasi memakai ProtectedRoute untuk mewajibkan pengguna login.
+   - Rute dashboard memeriksa role sebelum halaman ditampilkan.
+   - Pengguna yang tidak berhak akan dialihkan ke dashboard role-nya sendiri.
+
+4. Matriks hak akses
+   - Matriks di Pengaturan Sistem sekarang digunakan untuk membatasi menu
+     dan rute: Data Siswa, Data Guru, Akademik, Jadwal, Absensi, Nilai,
+     BK/Konseling, dan Arsip.
+   - Perubahan matriks dimuat ulang segera setelah admin menekan Simpan.
+
+5. Keamanan backend (update terbaru)
+   - Endpoint autentikasi memakai JWT Bearer token dan role dari tabel users.
+   - Endpoint Manajemen Pengguna hanya bisa diakses Admin TU.
+   - Endpoint penetapan Wali Kelas tersedia di:
+     PUT /api/teachers/:id/homeroom (khusus Admin TU).
+   - Endpoint pribadi siswa tersedia di:
+     /api/students/me, /api/schedules/me, /api/attendance/me,
+     /api/grades/me, dan /api/library/reading-logs/me.
+   - Pencarian login siswa memeriksa NIS, NISN, atau email pada tabel students.
+     Sesi siswa dengan akun internal (student_<id>) dapat dipulihkan kembali
+     melalui endpoint /api/auth/me dan refresh token.
+   - Tabel master classes dibuat melalui migrasi backend sehingga endpoint
+     /api/classes tidak lagi bergantung pada tabel yang belum ada.
+
+[!] Yang masih wajib dipenuhi oleh backend
+
+1. Otorisasi API per role
+   - ProtectedRoute hanya melindungi tampilan frontend.
+   - Banyak endpoint utama sudah memakai Bearer token dan pembatasan role,
+     tetapi seluruh endpoint perlu diaudit satu per satu agar tidak ada URL API
+     lama yang masih dapat diakses langsung oleh role lain.
+
+2. Pembatasan data guru
+   - Endpoint pribadi siswa sudah tersedia dan harus digunakan oleh portal
+     siswa. Endpoint guru masih perlu membatasi data hanya untuk kelas/mapel
+     yang diajar atau kelas wali yang ditugaskan kepadanya.
+
+
+[✓] SUDAH TERINTEGRASI KE BACKEND
+---------------------------------
+
+1. Autentikasi dan akun pengguna
+   - Login, registrasi, refresh sesi, logout, profil pengguna.
+   - Login menerima email untuk staf atau NIS/NISN untuk siswa, termasuk
+     pemulihan sesi dan refresh token siswa.
+   - Manajemen akun: daftar, tambah, ubah nama/email/password/peran, hapus.
+   - Halaman Data Guru mengaktifkan akun guru dari profil guru yang sudah
+     dibuat; Manajemen Pengguna mengubah kredensial dan role akun yang ada.
+   - Endpoint: /api/auth/*
+
+2. Data siswa
+   - Lihat, tambah, ubah, dan hapus data siswa.
+   - Endpoint: /api/students
+
+3. Data guru dan wali kelas
+   - Lihat, tambah, ubah, hapus guru, serta penetapan wali kelas.
+   - Endpoint: /api/teachers
+
+4. Akademik
+   - Mata pelajaran dan master kelas, termasuk tabel classes pada database.
+   - Endpoint: /api/subjects, /api/classes
+
+5. Jadwal dan absensi
+   - Jadwal menggunakan API CRUD.
+   - Absensi dibaca dan disimpan ke API, dengan cache browser sebagai
+     cadangan ketika server tidak tersedia.
+   - Endpoint: /api/schedules, /api/attendance
+
+6. Nilai dan BK/Konseling
+   - Pengelolaan nilai/raport serta catatan konseling.
+   - Endpoint: /api/grades, /api/counseling
+
+7. Prestasi, pengumuman, dan CMS berita
+   - Kelola data prestasi, pengumuman, dan artikel/berita.
+   - Endpoint: /api/achievements, /api/announcements, /api/news
+
+8. PPDB
+   - Form pendaftaran publik dan pengelolaan pendaftar oleh admin.
+   - Endpoint: /api/ppdb
+
+9. Ekstrakurikuler dan kalender kegiatan
+   - Data ekskul, anggota ekskul, serta agenda kalender.
+   - Endpoint: /api/extracurricular, /api/extracurricular-students,
+     /api/calendar-events
+
+10. Arsip, inventaris, dan perangkat ajar
+    - Arsip dokumen, sarana-prasarana, dan lesson plan.
+    - Endpoint: /api/archives, /api/inventory, /api/lesson-plans
+
+11. Perpustakaan digital
+    - Buku dan log/ringkasan membaca siswa.
+    - Endpoint: /api/library/books, /api/library/reading-logs
+
+12. Laporan, pengaturan, dan pembuatan backup
+    - Statistik dashboard, konfigurasi sekolah, serta pembuatan backup.
+    - Endpoint: /api/reports/dashboard, /api/settings, /api/backup
+
+
+[✗] BELUM TERINTEGRASI KE BACKEND
+---------------------------------
+
+1. Unggah logo sekolah
+   - Tombol ganti logo masih tampilan saja.
+   - Belum ada pengiriman file ke backend atau cloud storage.
+
+2. Status aktif/nonaktif akun
+   - Tombol status pengguna belum menyimpan perubahan.
+   - Perlu kolom status pada tabel users dan endpoint update status.
+
+3. Riwayat dan unduh backup
+   - API sudah bisa membuat backup.
+   - Daftar riwayat backup dan tombol unduh masih berada di state browser.
+   - Perlu endpoint daftar backup dan download file backup.
+
+4. Kartu siswa / QR
+   - QR dibuat langsung oleh browser.
+   - Belum ada endpoint untuk menyimpan, memvalidasi, atau mengelola kartu.
+
+5. Halaman profil publik
+   - Visi-misi, fasilitas, program, testimoni, FAQ, kontak, dan sebagian
+     konten landing page masih data statis di frontend.
+   - Perlu CMS/endpoint jika kontennya ingin dikelola dari dashboard.
+
+6. Reset kata sandi
+   - Halaman lupa kata sandi belum memiliki proses atau endpoint backend.
+   - Perlu endpoint permintaan reset, token, dan pembaruan password.
+
+7. Integrasi Google Drive dan Google Sheets
+   - Saat ini digunakan sebagai tautan atau impor di sisi browser.
+   - Belum ada sinkronisasi server-side dengan Google API.

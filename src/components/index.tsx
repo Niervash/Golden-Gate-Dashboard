@@ -29,5 +29,16 @@ export * from "./admin-announcements";
 export * from "./admin-archive";
 export * from "./admin-reports";
 export * from "./admin-settings";
+export * from "./admin-user-management";
+export * from "./admin-extracurricular";
+export * from "./admin-calendar-event";
+export * from "./admin-news-cms";
+
+export * from "./school-features";
+export * from "./testimonials";
+export * from "./stats-section";
+export * from "./academic-programs";
+export * from "./campus-facilities";
+export * from "./faq-section";
 
 export { CardLogin, LoginBranding, Preloader };

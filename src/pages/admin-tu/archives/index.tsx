@@ -16,7 +16,8 @@ import {
   X,
   ShieldAlert,
   ArrowUpRight,
-  Database
+  Database,
+  ExternalLink
 } from "lucide-react";
 
 interface ArchiveItem {
@@ -28,6 +29,7 @@ interface ArchiveItem {
   uploader: string;
   access: "Public" | "Confidential" | "Restricted";
   description: string;
+  driveLink?: string;
 }
 
 const ArchivesPage: React.FC = () => {
@@ -35,7 +37,13 @@ const ArchivesPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  // Form states
+  const [driveBaseUrl, setDriveBaseUrl] = useState<string>(() => {
+    return localStorage.getItem("ggs_archive_drive_url") || "https://drive.google.com/drive/folders/1_ggs_default_school_archive";
+  });
+  const [isEditDriveOpen, setIsEditDriveOpen] = useState(false);
+  const [tempDriveUrl, setTempDriveUrl] = useState(driveBaseUrl);
+  const [docDriveLink, setDocDriveLink] = useState("");
+
   const [docName, setDocName] = useState("");
   const [docCat, setDocCat] = useState("Kurikulum");
   const [docAccess, setDocAccess] = useState<"Public" | "Confidential" | "Restricted">(
@@ -44,48 +52,65 @@ const ArchivesPage: React.FC = () => {
   const [docDesc, setDocDesc] = useState("");
   const [docSize, setDocSize] = useState("1.2 MB");
 
-  const [archives, setArchives] = useState<ArchiveItem[]>([
-    {
-      id: "ARC-001",
-      name: "Kurikulum Operasional Satuan Pendidikan (KOSP) 2026.pdf",
-      category: "Kurikulum",
-      date: "14 Juli 2026",
-      size: "4.8 MB",
-      uploader: "Admin TU (Siti)",
-      access: "Public",
-      description: "Dokumen acuan kurikulum KOSP Golden Gate School TA 2026/2027.",
-    },
-    {
-      id: "ARC-002",
-      name: "SK Pembagian Tugas Mengajar Semester Ganjil.pdf",
-      category: "Kepegawaian",
-      date: "12 Juli 2026",
-      size: "2.1 MB",
-      uploader: "Admin TU (Siti)",
-      access: "Restricted",
-      description: "Surat Keputusan kepala sekolah mengenai tugas mengajar guru.",
-    },
-    {
-      id: "ARC-003",
-      name: "Laporan Pertanggungjawaban PPDB 2026.xlsx",
-      category: "Keuangan",
-      date: "10 Juli 2026",
-      size: "12.4 MB",
-      uploader: "Bendahara",
-      access: "Confidential",
-      description: "Laporan keuangan lengkap pengeluaran dan pemasukan dana PPDB.",
-    },
-    {
-      id: "ARC-004",
-      name: "Undangan Dinas Pendidikan - Rapat KTSP.pdf",
-      category: "Surat Menyurat",
-      date: "08 Juli 2026",
-      size: "820 KB",
-      uploader: "Admin TU (Budi)",
-      access: "Public",
-      description: "Undangan rapat dinas untuk koordinasi kurikulum KTSP.",
-    },
-  ]);
+  const [archives, setArchives] = useState<ArchiveItem[]>(() => {
+    const saved = localStorage.getItem("ggs_archives_db");
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { }
+    }
+    return [
+      {
+        id: "ARC-001",
+        name: "Kurikulum Operasional Satuan Pendidikan (KOSP) 2026.pdf",
+        category: "Kurikulum",
+        date: "14 Juli 2026",
+        size: "4.8 MB",
+        uploader: "Admin TU (Siti)",
+        access: "Public",
+        description: "Dokumen acuan kurikulum KOSP Golden Gate School TA 2026/2027.",
+        driveLink: "https://drive.google.com/file/d/1example_kosp_2026/view",
+      },
+      {
+        id: "ARC-002",
+        name: "SK Pembagian Tugas Mengajar Semester Ganjil.pdf",
+        category: "Kepegawaian",
+        date: "12 Juli 2026",
+        size: "2.1 MB",
+        uploader: "Admin TU (Siti)",
+        access: "Restricted",
+        description: "Surat Keputusan kepala sekolah mengenai tugas mengajar guru.",
+        driveLink: "https://drive.google.com/file/d/1example_sk_tugas/view",
+      },
+      {
+        id: "ARC-003",
+        name: "Laporan Pertanggungjawaban PPDB 2026.xlsx",
+        category: "Keuangan",
+        date: "10 Juli 2026",
+        size: "12.4 MB",
+        uploader: "Bendahara",
+        access: "Confidential",
+        description: "Laporan keuangan lengkap pengeluaran dan pemasukan dana PPDB.",
+        driveLink: "https://drive.google.com/file/d/1example_lpj_ppdb/view",
+      },
+      {
+        id: "ARC-004",
+        name: "Undangan Dinas Pendidikan - Rapat KTSP.pdf",
+        category: "Surat Menyurat",
+        date: "08 Juli 2026",
+        size: "820 KB",
+        uploader: "Admin TU (Budi)",
+        access: "Public",
+        description: "Undangan rapat dinas untuk koordinasi kurikulum KTSP.",
+        driveLink: "https://drive.google.com/file/d/1example_undangan/view",
+      },
+    ];
+  });
+
+  const handleSaveDriveUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDriveBaseUrl(tempDriveUrl);
+    localStorage.setItem("ggs_archive_drive_url", tempDriveUrl);
+    setIsEditDriveOpen(false);
+  };
 
   const categories = [
     "All",
@@ -120,19 +145,25 @@ const ArchivesPage: React.FC = () => {
       uploader: "Admin TU (Siti)",
       access: docAccess,
       description: docDesc || "Tidak ada deskripsi.",
+      driveLink: docDriveLink || driveBaseUrl,
     };
 
-    setArchives([newDoc, ...archives]);
+    const updated = [newDoc, ...archives];
+    setArchives(updated);
+    localStorage.setItem("ggs_archives_db", JSON.stringify(updated));
     setIsUploadOpen(false);
     // Reset fields
     setDocName("");
     setDocDesc("");
+    setDocDriveLink("");
     setDocAccess("Public");
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus arsip dokumen ini?")) {
-      setArchives(archives.filter((item) => item.id !== id));
+      const updated = archives.filter((item) => item.id !== id);
+      setArchives(updated);
+      localStorage.setItem("ggs_archives_db", JSON.stringify(updated));
     }
   };
 
@@ -178,14 +209,49 @@ const ArchivesPage: React.FC = () => {
               Pusat penyimpanan digital dokumen kurikulum, keuangan, surat dinas, dan berkas kepegawaian.
             </p>
           </div>
-          <button
-            onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all transform hover:-translate-y-0.5"
-            style={{ backgroundColor: "#d9ab3f", color: "#23305d" }}
-          >
-            <Plus size={18} />
-            Arsipkan Berkas Baru
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => {
+                setTempDriveUrl(driveBaseUrl);
+                setIsEditDriveOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[#1a2347] border border-[#d9ab3f]/40 text-[#d9ab3f] hover:bg-[#d9ab3f]/10 transition-all"
+            >
+              <ExternalLink size={18} />
+              Atur Drive Penyimpanan
+            </button>
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all transform hover:-translate-y-0.5"
+              style={{ backgroundColor: "#d9ab3f", color: "#23305d" }}
+            >
+              <Plus size={18} />
+              Arsipkan Berkas Baru
+            </button>
+          </div>
+        </div>
+
+        {/* Current Drive Link Alert Banner */}
+        <div className="bg-[#1a2347]/80 border border-[#43424e] rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#d9ab3f]/15 text-[#d9ab3f]">
+              <Database size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Lokasi Google Drive Utama DB</p>
+              <a
+                href={driveBaseUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-semibold text-[#d9ab3f] hover:underline flex items-center gap-1.5 break-all"
+              >
+                {driveBaseUrl} <ArrowUpRight size={14} />
+              </a>
+            </div>
+          </div>
+          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full font-bold uppercase whitespace-nowrap">
+            Tersimpan di DB
+          </span>
         </div>
 
         {/* Categories Carousel / Filters */}
@@ -307,20 +373,24 @@ const ArchivesPage: React.FC = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => alert(`Membuka berkas: ${item.name}`)}
-                            className="p-2 bg-[#1d2950] hover:bg-[#d9ab3f]/20 border border-[#43424e] rounded-xl text-[#d9ab3f] transition-all"
-                            title="Pratinjau Dokumen"
+                          <a
+                            href={item.driveLink || driveBaseUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-2 bg-[#1d2950] hover:bg-[#d9ab3f]/20 border border-[#43424e] rounded-xl text-[#d9ab3f] transition-all inline-flex items-center"
+                            title="Buka Berkas di Google Drive"
                           >
                             <Eye size={15} />
-                          </button>
-                          <button
-                            onClick={() => alert(`Mengunduh berkas: ${item.name}`)}
-                            className="p-2 bg-[#1d2950] hover:bg-[#d9ab3f]/20 border border-[#43424e] rounded-xl text-[#d9ab3f] transition-all"
-                            title="Unduh Dokumen"
+                          </a>
+                          <a
+                            href={item.driveLink || driveBaseUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-2 bg-[#1d2950] hover:bg-[#d9ab3f]/20 border border-[#43424e] rounded-xl text-[#d9ab3f] transition-all inline-flex items-center"
+                            title="Unduh / Buka Google Drive"
                           >
                             <Download size={15} />
-                          </button>
+                          </a>
                           <button
                             onClick={() => handleDelete(item.id)}
                             className="p-2 bg-[#1d2950] hover:bg-red-500/10 border border-[#43424e] rounded-xl text-red-400 transition-all"
@@ -410,6 +480,22 @@ const ArchivesPage: React.FC = () => {
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Link Google Drive Berkas
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/file/d/..."
+                  value={docDriveLink}
+                  onChange={(e) => setDocDriveLink(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#1d2950] text-white border border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:outline-none text-sm placeholder:text-slate-400/50"
+                />
+                <p className="text-[10px] text-slate-400">
+                  *Link ini akan tersimpan ke DB & terhubung ke Google Drive sekolah Anda.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                   Deskripsi / Keterangan Berkas
                 </label>
                 <textarea
@@ -435,6 +521,57 @@ const ArchivesPage: React.FC = () => {
                   style={{ backgroundColor: "#d9ab3f" }}
                 >
                   Unggah & Arsipkan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Drive URL Modal */}
+      {isEditDriveOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a2347] border border-[#43424e] rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="p-6 bg-gradient-to-r from-[#23305d] to-[#151e3d] border-b border-[#43424e] flex justify-between items-center text-white">
+              <div className="flex items-center gap-2.5">
+                <Database className="text-[#d9ab3f]" size={20} />
+                <h3 className="font-bold text-lg">Konfigurasi Link Google Drive DB</h3>
+              </div>
+              <button onClick={() => setIsEditDriveOpen(false)} className="text-slate-400 hover:text-white p-1">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveDriveUrl} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                  URL Master Google Drive (Tersimpan di Database)
+                </label>
+                <input
+                  type="url"
+                  value={tempDriveUrl}
+                  onChange={(e) => setTempDriveUrl(e.target.value)}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="w-full px-4 py-3 bg-[#1d2950] text-white border border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:outline-none text-sm font-mono"
+                  required
+                />
+                <p className="text-xs text-slate-400">
+                  Anda dapat menyesuaikan link Google Drive ini sesuai dengan penyimpanan Drive pilihan Anda. Perubahan akan tersimpan permanen di database sistem.
+                </p>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditDriveOpen(false)}
+                  className="flex-1 py-3 bg-[#1d2950] border border-[#43424e] text-white rounded-xl text-sm font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 text-[#23305d] font-bold rounded-xl text-sm"
+                  style={{ backgroundColor: "#d9ab3f" }}
+                >
+                  Simpan ke DB
                 </button>
               </div>
             </form>

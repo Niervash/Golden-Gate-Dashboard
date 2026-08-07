@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Html5Qrcode } from "html5-qrcode";
 import { useStudents } from "../../context/student-context";
+import { attendanceApi } from "../../utils/api";
 import {
   Calendar,
   CheckCircle,
@@ -35,7 +36,20 @@ interface AttendanceRecord {
   scanMethod?: "QR Card" | "Manual";
 }
 
-// LocalStorage key for today's attendance
+/** DB stores "Alpha"; UI historically used "Alpa". */
+const toUiStatus = (status: string): AttendanceRecord["status"] => {
+  if (status === "Alpha" || status === "Alpa") return "Alpa";
+  if (status === "Hadir" || status === "Sakit" || status === "Izin") return status;
+  return "Belum";
+};
+
+const toDbStatus = (status: AttendanceRecord["status"]): string | null => {
+  if (status === "Belum") return null;
+  if (status === "Alpa") return "Alpha";
+  return status;
+};
+
+// Offline cache (secondary to BE)
 const getTodayKey = () =>
   `ggs_attendance_${format(new Date(), "yyyy-MM-dd")}`;
 
@@ -65,6 +79,8 @@ export const AttendanceManagementDashboard = () => {
     message: string;
   } | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  // Backend sync indicator
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Camera scanning states
   const [hasCameraError, setHasCameraError] = useState(false);
@@ -96,44 +112,100 @@ export const AttendanceManagementDashboard = () => {
 
   const today = format(new Date(), "EEEE, dd MMMM yyyy", { locale: id });
 
-  // ── Build attendance list from real students data ─────────────────────────
+  // ── Build attendance list from students + BE (BE wins over offline cache) ─
   useEffect(() => {
     if (students.length === 0) return;
 
     const saved = loadTodayAttendance();
     const savedNisMap = new Map(saved.map((r) => [r.nis, r]));
 
-    // Merge: semua siswa dari spreadsheet, pakai saved jika ada
-    const merged: AttendanceRecord[] = students.map((s) => {
-      if (savedNisMap.has(s.nis)) {
-        return savedNisMap.get(s.nis)!;
-      }
-      return {
-        id: s.id,
-        nama: s.namaLengkap,
-        nis: s.nis,
-        kelas: s.kelas,
-        status: "Belum",
-        jamMasuk: "-",
-        keterangan: "-",
-      };
-    });
-
-    setAttendanceList(merged);
+    attendanceApi
+      .getAll()
+      .then((res) => {
+        const todayStr = format(new Date(), "yyyy-MM-dd");
+        const raw = res.data;
+        const list: any[] = Array.isArray(raw) ? raw : raw?.data || [];
+        const backendRecords = list.filter(
+          (r: any) => r.tanggal && String(r.tanggal).startsWith(todayStr)
+        );
+        backendRecords.forEach((r: any) => {
+          savedNisMap.set(r.nis, {
+            id: String(r.id ?? r.nis),
+            nama: r.nama_lengkap || r.nama_siswa || r.nama || "-",
+            nis: r.nis,
+            kelas: r.kelas || "-",
+            status: toUiStatus(r.status),
+            jamMasuk: r.jam_masuk || "-",
+            keterangan: r.keterangan || "-",
+          });
+        });
+      })
+      .catch(() => {
+        // Backend unavailable — use offline cache only
+      })
+      .finally(() => {
+        const merged: AttendanceRecord[] = students.map((s) => {
+          if (savedNisMap.has(s.nis)) {
+            const existing = savedNisMap.get(s.nis)!;
+            return {
+              ...existing,
+              nama: existing.nama && existing.nama !== "-" ? existing.nama : s.namaLengkap,
+              kelas: existing.kelas && existing.kelas !== "-" ? existing.kelas : s.kelas,
+            };
+          }
+          return {
+            id: String(s.id),
+            nama: s.namaLengkap,
+            nis: s.nis,
+            kelas: s.kelas,
+            status: "Belum" as const,
+            jamMasuk: "-",
+            keterangan: "-",
+          };
+        });
+        setAttendanceList(merged);
+      });
   }, [students]);
 
-  // Auto-save whenever attendance changes
+  // Offline cache mirror (not source of truth when BE is up)
   useEffect(() => {
     if (attendanceList.length > 0) {
       saveTodayAttendance(attendanceList);
     }
   }, [attendanceList]);
 
-  // Dynamic class list from real data
   const kelasList = useMemo(() => {
     const set = new Set(students.map((s) => s.kelas).filter(Boolean));
     return Array.from(set).sort();
   }, [students]);
+
+  // Persist one record — payload must match BE: { nis, tanggal, status, keterangan }
+  const syncToBackend = (record: AttendanceRecord) => {
+    const dbStatus = toDbStatus(record.status);
+    if (!dbStatus || !record.nis) return;
+    setIsSyncing(true);
+    const ketParts: string[] = [];
+    if (record.jamMasuk && record.jamMasuk !== "-") {
+      ketParts.push(`Jam: ${record.jamMasuk}`);
+    }
+    if (record.scanMethod) ketParts.push(`Metode: ${record.scanMethod}`);
+    if (record.keterangan && record.keterangan !== "-") {
+      ketParts.push(record.keterangan);
+    }
+    attendanceApi
+      .record({
+        nis: record.nis,
+        tanggal: format(new Date(), "yyyy-MM-dd"),
+        status: dbStatus,
+        keterangan: ketParts.join(" | ") || null,
+      })
+      .catch((err) => {
+        console.error("Gagal sync absensi ke BE:", err);
+      })
+      .finally(() => {
+        setIsSyncing(false);
+      });
+  };
 
   // ── Process QR attendance ──────────────────────────────────────────────────
   const processAttendance = (qrInput: string) => {
@@ -200,6 +272,9 @@ export const AttendanceManagementDashboard = () => {
         } else {
           setAttendanceList([newRecord, ...attendanceListRef.current]);
         }
+
+        // Persist to backend (fire-and-forget)
+        syncToBackend(newRecord);
 
         setScanResult({
           success: true,
@@ -360,19 +435,22 @@ export const AttendanceManagementDashboard = () => {
     id: string,
     newStatus: "Hadir" | "Sakit" | "Izin" | "Alpa" | "Belum"
   ) => {
-    setAttendanceList(
-      attendanceList.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            status: newStatus,
-            jamMasuk: newStatus === "Hadir" ? format(new Date(), "HH:mm") : "-",
-            scanMethod: newStatus === "Hadir" ? "Manual" : undefined,
-          };
-        }
-        return item;
-      })
-    );
+    const updatedList = attendanceList.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          status: newStatus,
+          jamMasuk: newStatus === "Hadir" ? format(new Date(), "HH:mm") : "-",
+          scanMethod: newStatus === "Hadir" ? "Manual" : undefined,
+        };
+      }
+      return item;
+    });
+    setAttendanceList(updatedList);
+
+    // Persist the changed record to backend (fire-and-forget)
+    const changedRecord = updatedList.find((item) => item.id === id);
+    if (changedRecord) syncToBackend(changedRecord);
   };
 
   const filteredAttendance = attendanceList.filter((item) => {
@@ -414,8 +492,18 @@ export const AttendanceManagementDashboard = () => {
             )}
           </p>
         </div>
-        <div className="flex gap-3 flex-wrap">
-          {/* Sync button */}
+        <div className="flex gap-3 flex-wrap items-center">
+          {/* Backend sync indicator */}
+          {isSyncing && (
+            <span
+              title="Menyimpan ke server..."
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold"
+            >
+              <RefreshCw size={13} className="animate-spin" />
+              Menyimpan...
+            </span>
+          )}
+          {/* GSheets sync button */}
           {source?.type === "gsheets" && (
             <button
               onClick={() => importFromGSheets()}

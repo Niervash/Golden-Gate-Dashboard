@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { ppdbApi } from "../../../utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -71,7 +72,6 @@ interface Pendaftar {
   tempatLahir: string;
   tanggalLahir: string;
   asalSekolah: string;
-  jurusanDaftar: "IPA" | "IPS";
   nilaiRataRata: number;
   status: "menunggu" | "diverifikasi" | "ditolak" | "diterima";
   tanggalDaftar: string;
@@ -92,160 +92,47 @@ interface Pendaftar {
   };
 }
 
-// Mock data pendaftar (sama seperti sebelumnya)
-const mockPendaftar: Pendaftar[] = [
-  {
-    id: "1",
-    nomorPendaftaran: "PPDB-2025-001",
-    namaLengkap: "Ahmad Rizki Pratama",
-    nisn: "1234567890",
-    jenisKelamin: "L",
-    tempatLahir: "Jakarta",
-    tanggalLahir: "2008-05-15",
-    asalSekolah: "SMP Negeri 1 Jakarta",
-    jurusanDaftar: "IPA",
-    nilaiRataRata: 85.5,
-    status: "diverifikasi",
-    tanggalDaftar: "2025-01-10",
-    nomorTelepon: "081234567890",
-    email: "ahmad@example.com",
-    alamat: "Jl. Merdeka No. 123, Jakarta Pusat",
-    namaAyah: "Budi Santoso",
-    namaIbu: "Siti Aminah",
-    pekerjaanAyah: "PNS",
-    pekerjaanIbu: "Guru",
-    dokumenLengkap: true,
-    catatan: "Dokumen lengkap dan valid",
-    tahapSeleksi: {
-      administrasi: true,
-      tesTulis: 85,
-      wawancara: 90,
-      nilaiAkhir: 87.5,
-    },
+// Mapper: backend (snake_case) → frontend (camelCase)
+// Backend fields: id, nama_lengkap, nis, asal_sekolah, tanggal_daftar,
+//                 status, no_telp, alamat, nilai_un
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mapBackendToPendaftar = (raw: any): Pendaftar => ({
+  id: String(raw.id),
+  nomorPendaftaran: raw.nomorPendaftaran ?? raw.nomor_pendaftaran ?? `PPDB-${String(raw.id).padStart(3, "0")}`,
+  namaLengkap: raw.namaLengkap ?? raw.nama_lengkap ?? "",
+  nisn: raw.nisn ?? raw.nis ?? "",
+  jenisKelamin: (raw.jenisKelamin ?? raw.jenis_kelamin) === "P" ? "P" : "L",
+  tempatLahir: raw.tempatLahir ?? raw.tempat_lahir ?? "",
+  tanggalLahir: raw.tanggalLahir ?? raw.tanggal_lahir ?? "",
+  asalSekolah: raw.asalSekolah ?? raw.asal_sekolah ?? "",
+  nilaiRataRata: parseFloat(raw.nilaiRataRata ?? raw.nilai_un ?? raw.nilai_rata_rata ?? 0),
+  status: (["menunggu", "diverifikasi", "diterima", "ditolak"].includes(raw.status)
+    ? raw.status
+    : "menunggu") as Pendaftar["status"],
+  tanggalDaftar: raw.tanggalDaftar ?? raw.tanggal_daftar ?? "",
+  nomorTelepon: raw.nomorTelepon ?? raw.no_telp ?? raw.nomor_telepon ?? "",
+  email: raw.email ?? "",
+  alamat: raw.alamat ?? "",
+  namaAyah: raw.namaAyah ?? raw.nama_ayah ?? "",
+  namaIbu: raw.namaIbu ?? raw.nama_ibu ?? "",
+  pekerjaanAyah: raw.pekerjaanAyah ?? raw.pekerjaan_ayah ?? "",
+  pekerjaanIbu: raw.pekerjaanIbu ?? raw.pekerjaan_ibu ?? "",
+  dokumenLengkap: raw.dokumenLengkap ?? raw.dokumen_lengkap ?? false,
+  catatan: raw.catatan ?? "",
+  tahapSeleksi: {
+    administrasi: raw.tahapSeleksi?.administrasi ?? raw.tahap_administrasi ?? false,
+    tesTulis: raw.tahapSeleksi?.tesTulis ?? raw.tes_tulis ?? null,
+    wawancara: raw.tahapSeleksi?.wawancara ?? raw.wawancara ?? null,
+    nilaiAkhir: raw.tahapSeleksi?.nilaiAkhir ?? raw.nilai_akhir ?? null,
   },
-  {
-    id: "2",
-    nomorPendaftaran: "PPDB-2025-002",
-    namaLengkap: "Siti Nurhaliza",
-    nisn: "1234567891",
-    jenisKelamin: "P",
-    tempatLahir: "Bandung",
-    tanggalLahir: "2008-08-20",
-    asalSekolah: "SMP Negeri 2 Bandung",
-    jurusanDaftar: "IPS",
-    nilaiRataRata: 82.3,
-    status: "menunggu",
-    tanggalDaftar: "2025-01-12",
-    nomorTelepon: "081234567891",
-    email: "siti@example.com",
-    alamat: "Jl. Asia Afrika No. 45, Bandung",
-    namaAyah: "Joko Widodo",
-    namaIbu: "Sri Mulyani",
-    pekerjaanAyah: "Pengusaha",
-    pekerjaanIbu: "Dokter",
-    dokumenLengkap: false,
-    catatan: "Menunggu upload KK",
-    tahapSeleksi: {
-      administrasi: false,
-      tesTulis: null,
-      wawancara: null,
-      nilaiAkhir: null,
-    },
-  },
-  {
-    id: "3",
-    nomorPendaftaran: "PPDB-2025-003",
-    namaLengkap: "Budi Setiawan",
-    nisn: "1234567892",
-    jenisKelamin: "L",
-    tempatLahir: "Surabaya",
-    tanggalLahir: "2008-03-10",
-    asalSekolah: "SMP Negeri 3 Surabaya",
-    jurusanDaftar: "IPA",
-    nilaiRataRata: 88.7,
-    status: "diterima",
-    tanggalDaftar: "2025-01-08",
-    nomorTelepon: "081234567892",
-    email: "budi@example.com",
-    alamat: "Jl. Diponegoro No. 78, Surabaya",
-    namaAyah: "Agus Suparman",
-    namaIbu: "Dewi Sartika",
-    pekerjaanAyah: "Insinyur",
-    pekerjaanIbu: "Akuntan",
-    dokumenLengkap: true,
-    catatan: "Peringkat 1 seleksi",
-    tahapSeleksi: {
-      administrasi: true,
-      tesTulis: 92,
-      wawancara: 95,
-      nilaiAkhir: 93.5,
-    },
-  },
-  {
-    id: "4",
-    nomorPendaftaran: "PPDB-2025-004",
-    namaLengkap: "Dewi Anggraeni",
-    nisn: "1234567893",
-    jenisKelamin: "P",
-    tempatLahir: "Yogyakarta",
-    tanggalLahir: "2008-11-25",
-    asalSekolah: "SMP Negeri 4 Yogyakarta",
-    jurusanDaftar: "IPS",
-    nilaiRataRata: 79.8,
-    status: "ditolak",
-    tanggalDaftar: "2025-01-15",
-    nomorTelepon: "081234567893",
-    email: "dewi@example.com",
-    alamat: "Jl. Malioboro No. 12, Yogyakarta",
-    namaAyah: "Rudi Hartono",
-    namaIbu: "Maya Sari",
-    pekerjaanAyah: "Wiraswasta",
-    pekerjaanIbu: "Ibu Rumah Tangga",
-    dokumenLengkap: true,
-    catatan: "Nilai di bawah standar",
-    tahapSeleksi: {
-      administrasi: true,
-      tesTulis: 65,
-      wawancara: 70,
-      nilaiAkhir: 67.5,
-    },
-  },
-  {
-    id: "5",
-    nomorPendaftaran: "PPDB-2025-005",
-    namaLengkap: "Rizki Fadilah",
-    nisn: "1234567894",
-    jenisKelamin: "L",
-    tempatLahir: "Semarang",
-    tanggalLahir: "2008-07-30",
-    asalSekolah: "SMP Negeri 5 Semarang",
-    jurusanDaftar: "IPA",
-    nilaiRataRata: 86.2,
-    status: "menunggu",
-    tanggalDaftar: "2025-01-14",
-    nomorTelepon: "081234567894",
-    email: "rizki@example.com",
-    alamat: "Jl. Pemuda No. 56, Semarang",
-    namaAyah: "Hendra Gunawan",
-    namaIbu: "Ratna Dewi",
-    pekerjaanAyah: "Dosen",
-    pekerjaanIbu: "Pengacara",
-    dokumenLengkap: true,
-    catatan: "Menunggu verifikasi berkas",
-    tahapSeleksi: {
-      administrasi: false,
-      tesTulis: null,
-      wawancara: null,
-      nilaiAkhir: null,
-    },
-  },
-];
+});
 
 const PPDBAdminDashboard = () => {
-  const [pendaftar, setPendaftar] = useState<Pendaftar[]>(mockPendaftar);
+  const [pendaftar, setPendaftar] = useState<Pendaftar[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("semua");
-  const [filterJurusan, setFilterJurusan] = useState<string>("semua");
   const [sortBy, setSortBy] = useState<string>("tanggalDaftar");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedPendaftar, setSelectedPendaftar] = useState<Pendaftar | null>(
@@ -269,6 +156,27 @@ const PPDBAdminDashboard = () => {
   );
 
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // ─── Fetch data dari backend ───────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await ppdbApi.getAll();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped = (res.data as any[]).map(mapBackendToPendaftar);
+      setPendaftar(mapped);
+    } catch (err) {
+      console.error("Gagal memuat data PPDB:", err);
+      setError("Gagal memuat data pendaftar. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Deteksi ukuran layar
   useEffect(() => {
@@ -345,11 +253,6 @@ const PPDBAdminDashboard = () => {
       filtered = filtered.filter((p) => p.status === filterStatus);
     }
 
-    // Filter berdasarkan jurusan
-    if (filterJurusan !== "semua") {
-      filtered = filtered.filter((p) => p.jurusanDaftar === filterJurusan);
-    }
-
     // Sorting
     filtered.sort((a, b) => {
       if (sortBy === "tanggalDaftar") {
@@ -373,22 +276,32 @@ const PPDBAdminDashboard = () => {
     });
 
     return filtered;
-  }, [pendaftar, searchTerm, filterStatus, filterJurusan, sortBy, sortOrder]);
+  }, [pendaftar, searchTerm, filterStatus, sortBy, sortOrder]);
 
-  // Handler untuk perubahan status
-  const handleStatusChange = (id: string, newStatus: Pendaftar["status"]) => {
-    setPendaftar((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p)),
-    );
+  // Handler untuk perubahan status — memanggil API lalu reload
+  const handleStatusChange = async (id: string, newStatus: Pendaftar["status"]) => {
+    try {
+      await ppdbApi.update(id, { status: newStatus });
+      await fetchData();
+    } catch (err) {
+      console.error("Gagal mengubah status:", err);
+      alert("Gagal mengubah status pendaftar. Silakan coba lagi.");
+    }
   };
 
-  // Handler untuk menghapus pendaftar
-  const handleDelete = (id: string) => {
+  // Handler untuk menghapus pendaftar — memanggil API lalu reload
+  const handleDelete = async (id: string) => {
     if (
       window.confirm("Apakah Anda yakin ingin menghapus data pendaftar ini?")
     ) {
-      setPendaftar((prev) => prev.filter((p) => p.id !== id));
-      setIsDetailModalOpen(false);
+      try {
+        await ppdbApi.delete(id);
+        setIsDetailModalOpen(false);
+        await fetchData();
+      } catch (err) {
+        console.error("Gagal menghapus pendaftar:", err);
+        alert("Gagal menghapus data pendaftar. Silakan coba lagi.");
+      }
     }
   };
 
@@ -752,19 +665,6 @@ const PPDBAdminDashboard = () => {
                               Data Akademik
                             </h4>
                             <div className="space-y-4">
-                              <div className="flex justify-between items-center py-2">
-                                <span
-                                  className="text-sm"
-                                  style={{ color: COLORS.secondary }}
-                                >
-                                  Jurusan
-                                </span>
-                                <span
-                                  className={`px-3 py-1 rounded-full text-xs font-medium ${selectedPendaftar.jurusanDaftar === "IPA" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}
-                                >
-                                  {selectedPendaftar.jurusanDaftar}
-                                </span>
-                              </div>
                               <div className="flex justify-between items-center py-2">
                                 <span
                                   className="text-sm"
@@ -1270,16 +1170,6 @@ const PPDBAdminDashboard = () => {
             </div>
             <div className="space-y-1">
               <p className="text-xs" style={{ color: COLORS.secondary }}>
-                Jurusan
-              </p>
-              <span
-                className={`px-2 py-1 rounded-full text-xs ${p.jurusanDaftar === "IPA" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}
-              >
-                {p.jurusanDaftar}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs" style={{ color: COLORS.secondary }}>
                 Nilai
               </p>
               <div className="flex items-center gap-2">
@@ -1362,6 +1252,38 @@ const PPDBAdminDashboard = () => {
       className="min-h-screen p-3 sm:p-4 lg:p-6"
       style={{ backgroundColor: COLORS.grayLight }}
     >
+      {/* Error Alert */}
+      {error && (
+        <div
+          className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl text-sm"
+          style={{ backgroundColor: "#fee2e2", color: "#b91c1c", border: "1px solid #fca5a5" }}
+        >
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span>{error}</span>
+          <button
+            onClick={fetchData}
+            className="ml-auto underline hover:no-underline"
+          >
+            Coba lagi
+          </button>
+        </div>
+      )}
+
+      {/* Loading Spinner */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-3">
+            <RefreshCw
+              className="w-8 h-8 animate-spin"
+              style={{ color: COLORS.primary }}
+            />
+            <p className="text-sm" style={{ color: COLORS.secondary }}>
+              Memuat data pendaftar...
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -1583,36 +1505,6 @@ const PPDBAdminDashboard = () => {
                 className="block text-sm font-medium mb-1"
                 style={{ color: COLORS.secondary }}
               >
-                Jurusan
-              </label>
-              <select
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-                style={{
-                  borderColor: COLORS.secondary,
-                  borderRadius: "0.5rem",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = COLORS.accent;
-                  e.target.style.boxShadow = `0 0 0 2px ${COLORS.goldTransparent20}`;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = COLORS.secondary;
-                  e.target.style.boxShadow = "none";
-                }}
-                value={filterJurusan}
-                onChange={(e) => setFilterJurusan(e.target.value)}
-              >
-                <option value="semua">Semua Jurusan</option>
-                <option value="IPA">IPA</option>
-                <option value="IPS">IPS</option>
-              </select>
-            </div>
-
-            <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                style={{ color: COLORS.secondary }}
-              >
                 Urutkan
               </label>
               <select
@@ -1687,7 +1579,7 @@ const PPDBAdminDashboard = () => {
             pendaftar
           </p>
           <button
-            onClick={() => setPendaftar(mockPendaftar)}
+            onClick={fetchData}
             className="text-sm flex items-center gap-1 transition-colors"
             style={{ color: COLORS.accent }}
             onMouseEnter={(e) =>
@@ -1696,7 +1588,7 @@ const PPDBAdminDashboard = () => {
             onMouseLeave={(e) => (e.currentTarget.style.color = COLORS.accent)}
           >
             <RefreshCw className="w-4 h-4" />
-            Reset Filter
+            Refresh
           </button>
         </div>
       )}
@@ -1731,12 +1623,6 @@ const PPDBAdminDashboard = () => {
                     style={{ minWidth: "200px" }}
                   >
                     Asal Sekolah
-                  </th>
-                  <th
-                    className="p-4 text-sm font-semibold text-white"
-                    style={{ minWidth: "80px" }}
-                  >
-                    Jurusan
                   </th>
                   <th
                     className="p-4 text-sm font-semibold text-white"
@@ -1782,13 +1668,6 @@ const PPDBAdminDashboard = () => {
                     </td>
                     <td className="p-4" style={{ minWidth: "200px" }}>
                       <div className="text-sm">{p.asalSekolah}</div>
-                    </td>
-                    <td className="p-4" style={{ minWidth: "80px" }}>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs ${p.jurusanDaftar === "IPA" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}
-                      >
-                        {p.jurusanDaftar}
-                      </span>
                     </td>
                     <td className="p-4" style={{ minWidth: "100px" }}>
                       <div className="flex items-center gap-2">

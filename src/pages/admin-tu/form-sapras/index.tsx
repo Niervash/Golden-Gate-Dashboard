@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import * as XLSX from "xlsx";
 import {
@@ -26,9 +26,11 @@ import {
   FileText,
 } from "lucide-react";
 import { AdminLayout } from "../../../layouts";
+import { inventoryApi } from "../../../utils/api";
 
 // --- Tipe data ---
 interface HistoryItem {
+  id: string | number;
   code: string;
   name: string;
   category: string;
@@ -58,6 +60,8 @@ const InventarisCode: React.FC = () => {
   const [notes, setNotes] = useState<string>("");
   const [generatedCode, setGeneratedCode] = useState<string>("—");
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: "",
@@ -68,22 +72,44 @@ const InventarisCode: React.FC = () => {
 
   const toastTimer = useRef<number | null>(null);
 
-  // --- Load history dari localStorage ---
-  useEffect(() => {
+  // --- Toast ---
+  const showToast = (
+    message: string,
+    icon: string = "check-circle",
+    type: "success" | "error" | "info" | "warning" = "success",
+  ) => {
+    setToast({ show: true, message, icon, type });
+    if (toastTimer.current) {
+      window.clearTimeout(toastTimer.current);
+    }
+    toastTimer.current = window.setTimeout(() => {
+      setToast({
+        show: false,
+        message: "",
+        icon: "check-circle",
+        type: "success",
+      });
+    }, 2500);
+  };
+
+  // --- Load history dari API ---
+  const fetchHistory = useCallback(async () => {
     try {
-      const raw = localStorage.getItem("inventoryHistory");
-      if (raw) {
-        const parsed: HistoryItem[] = JSON.parse(raw);
-        if (Array.isArray(parsed)) setHistory(parsed);
-      }
-    } catch (_) {}
+      setLoading(true);
+      const res = await inventoryApi.getAll();
+      const data = res.data?.data || res.data || [];
+      setHistory(Array.isArray(data) ? data : []);
+    } catch {
+      showToast("Gagal memuat data inventaris", "alert-triangle", "error");
+      setHistory([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("inventoryHistory", JSON.stringify(history));
-    } catch (_) {}
-  }, [history]);
+    fetchHistory();
+  }, [fetchHistory]);
 
   useEffect(() => {
     updateGeneratedCode();
@@ -129,26 +155,6 @@ const InventarisCode: React.FC = () => {
     return code;
   };
 
-  // --- Toast ---
-  const showToast = (
-    message: string,
-    icon: string = "check-circle",
-    type: "success" | "error" | "info" | "warning" = "success",
-  ) => {
-    setToast({ show: true, message, icon, type });
-    if (toastTimer.current) {
-      window.clearTimeout(toastTimer.current);
-    }
-    toastTimer.current = window.setTimeout(() => {
-      setToast({
-        show: false,
-        message: "",
-        icon: "check-circle",
-        type: "success",
-      });
-    }, 2500);
-  };
-
   // --- Copy ---
   const copyToClipboard = (text: string) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -184,41 +190,30 @@ const InventarisCode: React.FC = () => {
   };
 
   // --- History actions ---
-  const addToHistory = (
-    code: string,
-    name: string,
-    category: string,
-    location: string,
-    quantity: number,
-    status: string,
-    notes: string,
-  ) => {
-    const newEntry: HistoryItem = {
-      code,
-      name: name.trim() || "Tanpa nama",
-      category,
-      location: location.trim() || "-",
-      quantity: quantity || 1,
-      status: status || "Tersedia",
-      notes: notes.trim() || "-",
-      timestamp: new Date().toISOString(),
-    };
-    setHistory((prev) => [...prev, newEntry]);
+  const deleteHistoryItem = async (id: string | number) => {
+    if (!window.confirm("Yakin ingin menghapus item inventaris ini?")) return;
+    try {
+      await inventoryApi.delete(id);
+      await fetchHistory();
+      showToast("Item dihapus dari riwayat", "trash-2", "warning");
+    } catch {
+      showToast("Gagal menghapus item", "alert-triangle", "error");
+    }
   };
 
-  const deleteHistoryItem = (code: string) => {
-    setHistory((prev) => prev.filter((item) => item.code !== code));
-    showToast("Item dihapus dari riwayat", "trash-2", "warning");
-  };
-
-  const clearHistory = () => {
+  const clearHistory = async () => {
     if (history.length === 0) {
       showToast("Riwayat sudah kosong", "info", "info");
       return;
     }
-    if (window.confirm("Yakin ingin menghapus semua riwayat kode?")) {
-      setHistory([]);
+    if (!window.confirm("Yakin ingin menghapus semua riwayat kode?")) return;
+    try {
+      await Promise.all(history.map((item) => inventoryApi.delete(item.id)));
+      await fetchHistory();
       showToast("Semua riwayat dihapus", "trash-2", "warning");
+    } catch {
+      showToast("Gagal menghapus semua riwayat", "alert-triangle", "error");
+      await fetchHistory();
     }
   };
 
@@ -255,7 +250,7 @@ const InventarisCode: React.FC = () => {
   };
 
   // --- Submit ---
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!itemName.trim()) {
       showToast(
@@ -267,25 +262,35 @@ const InventarisCode: React.FC = () => {
       return;
     }
     const code = updateGeneratedCode();
-    addToHistory(
+    const payload = {
       code,
-      itemName,
-      itemCategory,
-      itemLocation,
-      quantity,
-      status,
-      notes,
-    );
-    showToast(`Kode ${code} berhasil disimpan!`, "check-circle", "success");
-    // Reset form (kecuali prefix dan kategori)
-    setItemName("");
-    setItemLocation("");
-    setQuantity(1);
-    setStatus("Tersedia");
-    setNotes("");
-    setTimeout(() => {
-      document.getElementById("itemNameInput")?.focus();
-    }, 100);
+      name: itemName.trim() || "Tanpa nama",
+      category: itemCategory,
+      location: itemLocation.trim() || "-",
+      quantity: quantity || 1,
+      status: status || "Tersedia",
+      notes: notes.trim() || "-",
+      timestamp: new Date().toISOString(),
+    };
+    try {
+      setSubmitting(true);
+      await inventoryApi.create(payload);
+      await fetchHistory();
+      showToast(`Kode ${code} berhasil disimpan!`, "check-circle", "success");
+      // Reset form (kecuali prefix dan kategori)
+      setItemName("");
+      setItemLocation("");
+      setQuantity(1);
+      setStatus("Tersedia");
+      setNotes("");
+      setTimeout(() => {
+        document.getElementById("itemNameInput")?.focus();
+      }, 100);
+    } catch {
+      showToast("Gagal menyimpan inventaris", "alert-triangle", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // --- Reset ---
@@ -320,6 +325,19 @@ const InventarisCode: React.FC = () => {
 
   // --- Render riwayat ---
   const renderHistoryRows = (): React.ReactNode => {
+    if (loading) {
+      return (
+        <tr key="loading">
+          <td colSpan={8} className="text-center text-gray-400 italic py-10">
+            <div className="flex flex-col items-center gap-2">
+              <RotateCw size={32} className="text-gray-300 animate-spin" />
+              <span>Memuat data inventaris...</span>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
     if (history.length === 0) {
       return (
         <tr key="empty">
@@ -375,7 +393,7 @@ const InventarisCode: React.FC = () => {
         statusColors[item.status] || "bg-gray-100 text-gray-700";
       return (
         <tr
-          key={item.code}
+          key={item.id ?? item.code}
           className="hover:bg-white/5 border-b border-[#43424e]/50 transition-all duration-200 group"
         >
           <td className="py-3 px-4 font-mono font-semibold text-[#d9ab3f] text-sm">
@@ -405,7 +423,7 @@ const InventarisCode: React.FC = () => {
           </td>
           <td className="py-3 px-4">
             <button
-              onClick={() => deleteHistoryItem(item.code)}
+              onClick={() => deleteHistoryItem(item.id)}
               className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100"
               title="Hapus item ini"
             >
@@ -427,7 +445,7 @@ const InventarisCode: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-[#121833] text-white flex items-start justify-center p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex items-start justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-6xl">
           {/* Toast Notification */}
           {toast.show && (
@@ -442,77 +460,73 @@ const InventarisCode: React.FC = () => {
           )}
 
           {/* Main Card */}
-          <div className="bg-[#1a2347]/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-[#43424e] overflow-hidden">
-            {/* Header dengan gradien */}
-            <div className="bg-gradient-to-r from-[#23305d] via-[#1a2347] to-[#121833] px-6 py-8 sm:px-8 sm:py-10 border-b border-[#43424e]">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                <div className="bg-white/20 backdrop-blur-sm p-3.5 rounded-2xl shadow-lg flex-shrink-0">
-                  <Barcode size={32} className="text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-                    Generator <span className="text-yellow-200">Kode</span>{" "}
-                    Inventaris
-                  </h1>
-                  <p className="text-blue-100/90 text-sm sm:text-base mt-1 flex flex-wrap items-center gap-2">
-                    <span>Format:</span>
-                    <span className="bg-white/10 px-3 py-0.5 rounded-full font-mono text-xs sm:text-sm">
-                      AWALAN-KATEGORI-TANGGAL-URUTAN
-                    </span>
-                    <span className="hidden sm:inline text-blue-200/60">•</span>
-                    <span className="text-blue-100/80 text-xs sm:text-sm">
-                      Contoh:{" "}
-                      <span className="font-mono font-semibold">
-                        SCIENC-LNY-260629-002
+          <div className="bg-white rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden">
+            {/* Header dengan tema warna sekolah #23305d & #d9ab3f */}
+            <div className="bg-[#23305d] px-6 py-8 sm:px-8 sm:py-10 border-b border-amber-500/20 relative overflow-hidden">
+              <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-[#d9ab3f]/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="bg-[#d9ab3f]/20 backdrop-blur-md p-3.5 rounded-2xl shadow-lg border border-[#d9ab3f]/30 flex-shrink-0">
+                    <Barcode size={34} className="text-[#d9ab3f]" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+                      Generator <span className="text-[#d9ab3f]">Kode Inventaris</span> Sarpras
+                    </h1>
+                    <p className="text-slate-300 text-xs sm:text-sm mt-1 flex flex-wrap items-center gap-2">
+                      <span>Format Penamaan:</span>
+                      <span className="bg-white/10 text-[#d9ab3f] px-3 py-0.5 rounded-full font-mono text-xs border border-[#d9ab3f]/30 font-semibold">
+                        AWALAN - KATEGORI - TANGGAL - URUTAN
                       </span>
-                    </span>
-                  </p>
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-shrink-0 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
-                  <div className="flex items-center gap-2 text-white/90 text-xs sm:text-sm">
-                    <Sparkles size={16} className="text-yellow-300" />
-                    <span className="font-medium">Auto-Generate</span>
+                <div className="flex-shrink-0 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                  <div className="flex items-center gap-2 text-white text-xs font-semibold">
+                    <Sparkles size={16} className="text-[#d9ab3f]" />
+                    <span>Auto-Generated Code</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Body */}
-            <div className="p-6 sm:p-8 lg:p-10">
-              {/* Form */}
+            {/* Body Form & Controls */}
+            <div className="p-6 sm:p-8 lg:p-10 bg-white">
               <form onSubmit={handleSubmit} autoComplete="off">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+                  {/* Nama Item */}
+                  <div className="space-y-2">
                     <label
-                      htmlFor="itemName"
-                      className="block text-sm font-semibold text-white"
+                      htmlFor="itemNameInput"
+                      className="block text-xs font-bold uppercase tracking-wider text-[#23305d]"
                     >
-                      <Tag size={16} className="inline text-blue-600 mr-2" />
-                      Nama Item
+                      <Tag size={14} className="inline text-[#d9ab3f] mr-1.5" />
+                      Nama Item / Aset
                     </label>
                     <input
                       id="itemNameInput"
                       type="text"
-                      placeholder="Contoh: Laptop Dell XPS 13"
+                      placeholder="Contoh: Laptop Asus ROG Strix / Proyektor Epson"
                       value={itemName}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setItemName(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base placeholder:text-gray-400/50"
+                      className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#d9ab3f] focus:bg-white focus:ring-2 focus:ring-[#d9ab3f]/30 transition-all text-sm font-medium placeholder:text-slate-400"
                       required
                     />
                   </div>
 
-                  <div className="space-y-1.5">
+                  {/* Kategori */}
+                  <div className="space-y-2">
                     <label
                       htmlFor="itemCategory"
-                      className="block text-sm font-semibold text-white"
+                      className="block text-xs font-bold uppercase tracking-wider text-[#23305d]"
                     >
                       <FolderOpen
-                        size={16}
-                        className="inline text-blue-600 mr-2"
+                        size={14}
+                        className="inline text-[#d9ab3f] mr-1.5"
                       />
-                      Kategori
+                      Kategori Aset
                     </label>
                     <select
                       id="itemCategory"
@@ -520,55 +534,55 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                         setItemCategory(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base appearance-none cursor-pointer"
+                      className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#d9ab3f] focus:bg-white focus:ring-2 focus:ring-[#d9ab3f]/30 transition-all text-sm font-semibold text-[#23305d] cursor-pointer"
                     >
-                      <option value="ELC">📱 Elektronik</option>
-                      <option value="FUR">🪑 Furnitur</option>
-                      <option value="ATK">✏️ Alat Tulis</option>
-                      <option value="MES">⚙️ Mesin</option>
-                      <option value="KMP">💻 Komputer</option>
-                      <option value="JLN">🌐 Jaringan</option>
-                      <option value="LBN">🔬 Laboratorium</option>
-                      <option value="KTR">🏢 Kantor</option>
-                      <option value="GDG">📦 Gudang</option>
-                      <option value="LNY" selected>
-                        📌 Lainnya (LNY)
-                      </option>
+                      <option value="ELC">📱 Elektronik (ELC)</option>
+                      <option value="FUR">🪑 Furnitur (FUR)</option>
+                      <option value="ATK">✏️ Alat Tulis & Kantor (ATK)</option>
+                      <option value="MES">⚙️ Mesin & Peratan (MES)</option>
+                      <option value="KMP">💻 Komputer & IT (KMP)</option>
+                      <option value="JLN">🌐 Perangkat Jaringan (JLN)</option>
+                      <option value="LBN">🔬 Peralatan Lab Science (LBN)</option>
+                      <option value="KTR">🏢 Inventaris Kantor (KTR)</option>
+                      <option value="GDG">📦 Stok Gudang (GDG)</option>
+                      <option value="LNY">📌 Lainnya (LNY)</option>
                     </select>
                   </div>
 
-                  <div className="space-y-1.5">
+                  {/* Lokasi */}
+                  <div className="space-y-2">
                     <label
                       htmlFor="itemLocation"
-                      className="block text-sm font-semibold text-white"
+                      className="block text-xs font-bold uppercase tracking-wider text-[#23305d]"
                     >
-                      <MapPin size={16} className="inline text-blue-600 mr-2" />
-                      Lokasi
+                      <MapPin size={14} className="inline text-[#d9ab3f] mr-1.5" />
+                      Lokasi Penyimpanan
                     </label>
                     <input
                       type="text"
                       id="itemLocation"
-                      placeholder="Contoh: Ruang 3, Lantai 2"
+                      placeholder="Contoh: Lab Komputer 1 / Ruang Guru TU"
                       value={itemLocation}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setItemLocation(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base placeholder:text-gray-400/50"
+                      className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#d9ab3f] focus:bg-white focus:ring-2 focus:ring-[#d9ab3f]/30 transition-all text-sm font-medium placeholder:text-slate-400"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
+                  {/* Awalan Kode */}
+                  <div className="space-y-2">
                     <label
                       htmlFor="itemPrefix"
-                      className="block text-sm font-semibold text-white"
+                      className="block text-xs font-bold uppercase tracking-wider text-[#23305d]"
                     >
-                      <Pen size={16} className="inline text-blue-600 mr-2" />
-                      Awalan Kode
+                      <Pen size={14} className="inline text-[#d9ab3f] mr-1.5" />
+                      Awalan Kode Unit (Prefix)
                     </label>
                     <input
                       type="text"
                       id="itemPrefix"
-                      placeholder="SCIENC"
+                      placeholder="SCIENC / GGS"
                       value={itemPrefix}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setItemPrefix(
@@ -578,21 +592,21 @@ const InventarisCode: React.FC = () => {
                         )
                       }
                       maxLength={10}
-                      className="w-full px-4 py-3.5 bg-gray-50/80 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 text-base uppercase font-mono placeholder:font-sans placeholder:uppercase placeholder:text-gray-400"
+                      className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#d9ab3f] focus:bg-white focus:ring-2 focus:ring-[#d9ab3f]/30 transition-all text-sm font-mono uppercase font-bold text-[#23305d] placeholder:text-slate-400"
                     />
                   </div>
 
                   {/* Jumlah */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <label
                       htmlFor="quantity"
-                      className="block text-sm font-semibold text-white"
+                      className="block text-xs font-bold uppercase tracking-wider text-[#23305d]"
                     >
                       <Package
-                        size={16}
-                        className="inline text-blue-600 mr-2"
+                        size={14}
+                        className="inline text-[#d9ab3f] mr-1.5"
                       />
-                      Jumlah
+                      Jumlah Unit
                     </label>
                     <input
                       type="number"
@@ -602,21 +616,21 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setQuantity(Math.max(1, parseInt(e.target.value) || 1))
                       }
-                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base"
+                      className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#d9ab3f] focus:bg-white focus:ring-2 focus:ring-[#d9ab3f]/30 transition-all text-sm font-semibold"
                     />
                   </div>
 
                   {/* Status */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <label
                       htmlFor="status"
-                      className="block text-sm font-semibold text-white"
+                      className="block text-xs font-bold uppercase tracking-wider text-[#23305d]"
                     >
                       <AlertCircle
-                        size={16}
-                        className="inline text-blue-600 mr-2"
+                        size={14}
+                        className="inline text-[#d9ab3f] mr-1.5"
                       />
-                      Status
+                      Status Keberadaan
                     </label>
                     <select
                       id="status"
@@ -624,52 +638,55 @@ const InventarisCode: React.FC = () => {
                       onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                         setStatus(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base appearance-none cursor-pointer"
+                      className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#d9ab3f] focus:bg-white focus:ring-2 focus:ring-[#d9ab3f]/30 transition-all text-sm font-semibold text-[#23305d] cursor-pointer"
                     >
-                      <option value="Tersedia">✅ Tersedia</option>
-                      <option value="Dipinjam">📤 Dipinjam</option>
-                      <option value="Rusak">⚠️ Rusak</option>
-                      <option value="Dihapus">🗑️ Dihapus</option>
+                      <option value="Tersedia">✅ Tersedia di Tempat</option>
+                      <option value="Dipinjam">📤 Sedang Dipinjam</option>
+                      <option value="Rusak">⚠️ Perlu Perbaikan / Rusak</option>
+                      <option value="Dihapus">🗑️ Dihapuskan</option>
                     </select>
                   </div>
 
-                  {/* Keterangan - full width */}
-                  <div className="col-span-1 md:col-span-2 space-y-1.5">
+                  {/* Keterangan */}
+                  <div className="col-span-1 md:col-span-2 space-y-2">
                     <label
                       htmlFor="notes"
-                      className="block text-sm font-semibold text-white"
+                      className="block text-xs font-bold uppercase tracking-wider text-[#23305d]"
                     >
                       <FileText
-                        size={16}
-                        className="inline text-blue-600 mr-2"
+                        size={14}
+                        className="inline text-[#d9ab3f] mr-1.5"
                       />
-                      Keterangan
+                      Keterangan Tambahan
                     </label>
                     <textarea
                       id="notes"
                       rows={2}
-                      placeholder="Catatan tambahan (opsional)"
+                      placeholder="Catatan spesifikasi atau kondisi barang (opsional)..."
                       value={notes}
                       onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                         setNotes(e.target.value)
                       }
-                      className="w-full px-4 py-3.5 bg-[#1d2950] text-white border-2 border-[#43424e] rounded-xl focus:border-[#d9ab3f] focus:ring-4 focus:ring-[#d9ab3f]/20 transition-all duration-200 text-base placeholder:text-gray-400/50 resize-y min-h-[60px]"
+                      className="w-full px-4 py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#d9ab3f] focus:bg-white focus:ring-2 focus:ring-[#d9ab3f]/30 transition-all text-sm placeholder:text-slate-400 resize-y min-h-[60px]"
                     />
                   </div>
                 </div>
 
-                {/* Code Display */}
-                <div className="mt-6 p-4 sm:p-5 bg-[#23305d] rounded-2xl border-2 border-[#43424e] flex flex-col sm:flex-row items-center justify-between gap-4">
+                {/* Kode Hasil Generator Box */}
+                <div className="mt-8 p-6 bg-gradient-to-r from-slate-900 via-[#23305d] to-slate-900 rounded-2xl border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg text-white">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-600/10 p-2 rounded-xl">
-                      <QrCode size={20} className="text-blue-600" />
+                    <div className="bg-[#d9ab3f]/20 p-3 rounded-xl border border-[#d9ab3f]/40">
+                      <QrCode size={26} className="text-[#d9ab3f]" />
                     </div>
-                    <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                      Kode Generated
-                    </span>
+                    <div>
+                      <span className="text-xs font-bold text-amber-300 uppercase tracking-widest block">
+                        Hasil Kode Barcode / Inventaris:
+                      </span>
+                      <p className="text-xs text-slate-300">Siap dicetak atau dicatat dalam sistem sarpras</p>
+                    </div>
                   </div>
                   <div className="flex-1 text-center">
-                    <span className="text-2xl sm:text-3xl lg:text-4xl font-mono font-bold bg-[#1d2950] px-5 py-2 rounded-xl text-[#d9ab3f] tracking-wider inline-block shadow-sm border border-[#43424e]">
+                    <span className="text-xl sm:text-2xl lg:text-3xl font-mono font-black bg-white/10 px-6 py-2.5 rounded-xl text-[#d9ab3f] tracking-widest inline-block border border-amber-400/30 shadow-inner">
                       {generatedCode}
                     </span>
                   </div>
@@ -677,23 +694,19 @@ const InventarisCode: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => copyToClipboard(generatedCode)}
-                      className={`p-3 rounded-xl transition-all duration-200 ${
+                      className={`p-3 rounded-xl transition-all font-bold ${
                         isCopied
                           ? "bg-emerald-600 text-white"
-                          : "bg-[#1d2950] hover:bg-[#d9ab3f]/10 text-[#d9ab3f] hover:text-[#d9ab3f] border border-[#43424e]"
-                      } shadow-sm hover:shadow-md`}
+                          : "bg-[#d9ab3f] hover:bg-amber-400 text-[#23305d]"
+                      }`}
                       title="Salin kode"
                     >
-                      {isCopied ? (
-                        <CheckCircle size={20} />
-                      ) : (
-                        <Copy size={20} />
-                      )}
+                      {isCopied ? <CheckCircle size={20} /> : <Copy size={20} />}
                     </button>
                     <button
                       type="button"
                       onClick={updateGeneratedCode}
-                      className="p-3 bg-[#1d2950] hover:bg-[#d9ab3f]/10 border border-[#43424e] rounded-xl transition-all duration-200 text-[#d9ab3f] hover:text-[#d9ab3f] shadow-sm hover:shadow-md"
+                      className="p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all text-white"
                       title="Refresh kode"
                     >
                       <RotateCw size={20} />
@@ -701,92 +714,74 @@ const InventarisCode: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Buttons */}
+                {/* Tombol Aksi */}
                 <div className="flex flex-col sm:flex-row gap-3 mt-6">
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-[#d9ab3f] to-[#af9151] hover:from-[#e3b84b] hover:to-[#be9f5c] text-[#121833] font-bold py-3.5 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 text-base"
+                    disabled={submitting}
+                    className="flex-1 bg-[#23305d] hover:bg-[#1c284c] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm border border-amber-500/20"
                   >
-                    <PlusCircle size={20} />
-                    Generate & Simpan
+                    <PlusCircle size={18} className="text-[#d9ab3f]" />
+                    {submitting ? "Menyimpan..." : "Generate & Simpan Ke Riwayat"}
                   </button>
                   <button
                     type="button"
                     onClick={updateGeneratedCode}
-                    className="flex-1 bg-[#1d2950] hover:bg-[#d9ab3f]/10 border border-[#43424e] text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-semibold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
                   >
-                    <RotateCw size={20} />
-                    Generate Ulang
+                    <RotateCw size={18} />
+                    Generate Ulang Kode
                   </button>
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="flex-1 bg-[#1d2950] hover:bg-[#d9ab3f]/10 border border-[#43424e] text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base"
+                    className="flex-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
                   >
-                    <Undo size={20} />
-                    Reset
+                    <Undo size={18} />
+                    Reset Form
                   </button>
                 </div>
               </form>
 
-              {/* History */}
-              <div className="mt-10 pt-6 border-t-2 border-[#43424e]">
+              {/* Riwayat Kode Inventaris */}
+              <div className="mt-10 pt-6 border-t border-slate-200">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2.5">
-                    <div className="bg-blue-600/10 p-2 rounded-xl">
-                      <List size={18} className="text-blue-600" />
-                    </div>
-                    Riwayat Kode
+                  <h3 className="text-lg font-extrabold text-[#23305d] flex items-center gap-2">
+                    <List size={20} className="text-[#d9ab3f]" />
+                    Riwayat Kode Inventaris Dibuat
                   </h3>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-1.5 bg-[#1d2950] border border-[#43424e] px-3.5 py-1.5 rounded-full">
-                      <Clock size={14} className="text-gray-500" />
-                      <span className="text-sm font-medium text-[#af9151]">
-                        {history.length} item
-                      </span>
+                    <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700">
+                      <Clock size={14} className="text-amber-600" />
+                      <span>{history.length} Item Tersimpan</span>
                     </div>
                     <button
                       type="button"
                       onClick={exportToExcel}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-xs"
                     >
-                      <FileSpreadsheet size={18} />
-                      <span className="hidden sm:inline">Export Excel</span>
-                      <span className="sm:hidden">Excel</span>
+                      <FileSpreadsheet size={16} />
+                      Export Rekap Excel
                     </button>
                   </div>
                 </div>
 
-                <div className="border border-[#43424e] rounded-2xl overflow-hidden shadow-sm">
-                  <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                    <table className="w-full text-sm">
-                      <thead className="bg-[#23305d] sticky top-0 z-10 backdrop-blur-sm">
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="max-h-80 overflow-y-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-[#23305d] text-white sticky top-0 z-10 text-xs font-bold uppercase tracking-wider">
                         <tr>
-                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
-                            Kode
-                          </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
-                            Item
-                          </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
-                            Kategori
-                          </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
-                            Lokasi
-                          </th>
-                          <th className="py-3.5 px-4 text-center font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
-                            Jml
-                          </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
-                            Status
-                          </th>
-                          <th className="py-3.5 px-4 text-left font-semibold text-white text-xs uppercase tracking-wider border-b border-[#43424e]">
-                            Keterangan
-                          </th>
-                          <th className="py-3.5 px-4 border-b border-[#43424e] w-12"></th>
+                          <th className="py-3.5 px-4 text-[#d9ab3f]">Kode</th>
+                          <th className="py-3.5 px-4">Nama Item</th>
+                          <th className="py-3.5 px-4">Kategori</th>
+                          <th className="py-3.5 px-4">Lokasi</th>
+                          <th className="py-3.5 px-4 text-center">Jml</th>
+                          <th className="py-3.5 px-4">Status</th>
+                          <th className="py-3.5 px-4">Keterangan</th>
+                          <th className="py-3.5 px-4 w-10"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#43424e]/50 bg-[#121833]/30">
+                      <tbody className="divide-y divide-slate-200 bg-white">
                         {renderHistoryRows()}
                       </tbody>
                     </table>
@@ -797,24 +792,17 @@ const InventarisCode: React.FC = () => {
                   <button
                     type="button"
                     onClick={clearHistory}
-                    className="text-sm text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-xl border border-red-500/20 transition-all duration-200 flex items-center gap-2"
+                    className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl border border-red-200 transition-all flex items-center gap-1.5"
                   >
-                    <Trash2 size={16} />
-                    Hapus semua
+                    <Trash2 size={14} />
+                    Hapus Semua Riwayat
                   </button>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="text-center mt-6 text-xs text-gray-400/80">
-            <p>Data tersimpan secara lokal di browser Anda</p>
-          </div>
         </div>
       </div>
-
-      {/* Animasi & Scrollbar Styles */}
       <style>{`
         @keyframes fadeInUp {
           from {
@@ -828,23 +816,6 @@ const InventarisCode: React.FC = () => {
         }
         .animate-fade-in-up {
           animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        /* Custom scrollbar */
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 5px;
-          height: 5px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #d1d5db;
-          border-radius: 10px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
         }
       `}</style>
     </AdminLayout>

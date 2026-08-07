@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { authApi } from "../../../utils/api";
 import {
   GraduationCap,
   Eye,
@@ -116,9 +117,32 @@ const RegisterForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = (e: React.FormEvent) => {
+  const navigate = useNavigate();
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Register form submitted");
+    if (!selectedRole) {
+      alert("Silakan pilih salah satu role.");
+      return;
+    }
+
+    let backendRole = "admin";
+    if (selectedRole === "kepala-sekolah") {
+      backendRole = "kepsek";
+    } else if (selectedRole === "admin-tu") {
+      backendRole = "admin";
+    } else if (selectedRole === "subject-teacher" || selectedRole === "homeroom-teacher") {
+      backendRole = "guru";
+    }
+
+    try {
+      await authApi.register({ name, email, password, role: backendRole });
+      alert("Pendaftaran berhasil! Silakan login.");
+      navigate("/auth/login");
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Pendaftaran gagal.");
+    }
   };
 
   return (

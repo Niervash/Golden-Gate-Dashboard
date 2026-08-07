@@ -234,6 +234,36 @@ const AdminHeader: React.FC = () => {
         navigate("/dashboard/admin-sapras");
       },
     },
+    {
+      key: "extracurricular",
+      label: "Ekstrakurikuler",
+      icon: <Users size={16} />,
+      onClick: () => {
+        setIsAdminDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/extracurricular");
+      },
+    },
+    {
+      key: "calendar-events",
+      label: "Agenda Kalender",
+      icon: <Calendar size={16} />,
+      onClick: () => {
+        setIsAdminDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/calendar-events");
+      },
+    },
+    {
+      key: "news-cms",
+      label: "CMS Berita",
+      icon: <Megaphone size={16} />,
+      onClick: () => {
+        setIsAdminDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+        navigate("/dashboard/news-cms");
+      },
+    },
   ];
 
   // More dropdown items
@@ -282,9 +312,9 @@ const AdminHeader: React.FC = () => {
 
   // Allowed keys based on role
   const allowedAdminKeys: Record<string, string[]> = {
-    admin: ["students", "teachers", "academic", "sapras", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan"],
-    kepsek: ["academic", "sapras", "schedule", "achievements", "reports", "lesson-plan"],
-    guru: ["academic", "schedule", "attendance", "grades", "lesson-plan"],
+    admin: ["students", "teachers", "academic", "sapras", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan", "extracurricular", "calendar-events", "news-cms"],
+    kepsek: ["academic", "sapras", "schedule", "achievements", "reports", "lesson-plan", "extracurricular", "calendar-events", "news-cms"],
+    guru: ["academic", "schedule", "attendance", "grades", "lesson-plan", "calendar-events"],
   };
 
   const allowedMoreKeys: Record<string, string[]> = {

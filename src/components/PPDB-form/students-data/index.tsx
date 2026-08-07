@@ -45,18 +45,33 @@ const StudentsData: React.FC<StudentsDataProps> = ({ formData, onChange }) => {
       <div className="grid md:grid-cols-2 gap-4 mt-4">
         <div className="space-y-2">
           <label
-            htmlFor="ttl"
+            htmlFor="tempatLahir"
             className="block text-sm font-medium text-gray-700"
           >
-            Tempat, Tanggal Lahir *
+            Tempat Lahir *
           </label>
           <input
             type="text"
-            id="ttl"
+            id="tempatLahir"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d9ab3f] focus:border-transparent"
-            placeholder="Jakarta, 01-01-2010"
-            value={formData.ttl || ""}
-            onChange={(e) => onChange("ttl", e.target.value)}
+            placeholder="Contoh: Makassar"
+            value={formData.tempatLahir || ""}
+            onChange={(e) => onChange("tempatLahir", e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor="tanggalLahir"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Tanggal Lahir *
+          </label>
+          <input
+            type="date"
+            id="tanggalLahir"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d9ab3f] focus:border-transparent"
+            value={formData.tanggalLahir || ""}
+            onChange={(e) => onChange("tanggalLahir", e.target.value)}
           />
         </div>
         <div className="space-y-2">

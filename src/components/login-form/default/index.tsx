@@ -2,13 +2,9 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  GraduationCap,
   Eye,
   EyeOff,
   ArrowLeft,
-  Shield,
-  Users,
-  BookOpen,
 } from "lucide-react";
 import { ILoveGGS } from "../../../assets";
 import { useAuth } from "../../../context";
@@ -135,76 +131,36 @@ const Label = ({ children, className = "", ...props }: LabelProps) => {
   );
 };
 
-type UserRole = "kepala-sekolah" | "admin-tu" | "subject-teacher" | "homeroom-teacher";
-
-const roles: {
-  value: UserRole;
-  label: string;
-  icon: React.ElementType;
-  description: string;
-}[] = [
-  {
-    value: "kepala-sekolah",
-    label: "Kepala Sekolah",
-    icon: Shield,
-    description: "Monitoring & laporan sekolah",
-  },
-  {
-    value: "admin-tu",
-    label: "Admin TU",
-    icon: Users,
-    description: "Administrasi & Tata Usaha",
-  },
-  {
-    value: "subject-teacher",
-    label: "Guru Mapel",
-    icon: BookOpen,
-    description: "Akademik & penilaian",
-  },
-  {
-    value: "homeroom-teacher",
-    label: "Wali Kelas",
-    icon: GraduationCap,
-    description: "Pendampingan siswa",
-  },
-];
-
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRole) {
-      alert("Silakan pilih salah satu role untuk masuk.");
-      return;
-    }
+    try {
+      const loggedUser = await login(identifier, password);
 
-    let contextRole: "admin" | "kepsek" | "guru" = "admin";
-    if (selectedRole === "kepala-sekolah") {
-      contextRole = "kepsek";
-    } else if (selectedRole === "admin-tu") {
-      contextRole = "admin";
-    } else if (selectedRole === "subject-teacher" || selectedRole === "homeroom-teacher") {
-      contextRole = "guru";
-    }
-
-    login(contextRole);
-
-    if (contextRole === "kepsek") {
-      navigate("/dashboard/principal");
-    } else if (contextRole === "guru") {
-      navigate("/teachers/dashboard_guru");
-    } else {
-      navigate("/dashboard/admin-tu");
+      // Dashboard is decided only by the authenticated role returned by backend.
+      if (loggedUser.role === "kepsek") {
+        navigate("/dashboard/principal");
+      } else if (loggedUser.role === "guru") {
+        navigate("/teachers/dashboard_guru");
+      } else if (loggedUser.role === "murid") {
+        navigate("/student/dashboard");
+      } else {
+        navigate("/dashboard/admin-tu");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message || "Email, NIS/NISN, atau password salah.");
     }
   };
+
 
   return (
     <div
@@ -256,68 +212,19 @@ const LoginForm = () => {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Role Selection */}
-          <div className="space-y-3">
-            <Label>Masuk Sebagai</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {roles.map((role) => {
-                const Icon = role.icon;
-                const isSelected = selectedRole === role.value;
-                return (
-                  <motion.button
-                    key={role.value}
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedRole(role.value)}
-                    className="p-3 sm:p-4 rounded-xl border-2 transition-all text-left"
-                    style={{
-                      borderColor: isSelected ? "#23305d" : "#43424e",
-                      backgroundColor: isSelected
-                        ? "rgba(35, 48, 93, 0.05)"
-                        : "transparent",
-                      color: isSelected ? "#23305d" : "#23305d",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = "#d9ab3f";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.borderColor = "#43424e";
-                      }
-                    }}
-                  >
-                    <Icon
-                      className="w-5 h-5 sm:w-6 sm:h-6 mb-2"
-                      style={{
-                        color: isSelected ? "#23305d" : "#af9151",
-                      }}
-                    />
-                    <p className="font-medium text-sm">{role.label}</p>
-                    <p
-                      className="text-xs mt-1 hidden sm:block"
-                      style={{ color: "#af9151" }}
-                    >
-                      {role.description}
-                    </p>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Email */}
+          {/* Email / NIS / NISN */}
           <div className="space-y-2">
-            <Label htmlFor="email">Email / NIP</Label>
+            <Label htmlFor="identifier">Email / NIS / NISN</Label>
             <Input
-              id="email"
+              id="identifier"
               type="text"
-              placeholder="Masukkan email atau NIP"
+              inputMode="text"
+              autoComplete="username"
+              placeholder="Email untuk staf, NIS atau NISN untuk siswa"
+              required
               className="h-11 sm:h-12"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               style={{
                 color: "#23305d",
                 placeholder: "#af9151",
@@ -414,9 +321,9 @@ const LoginForm = () => {
           >
             <p className="text-xs text-center" style={{ color: "#23305d" }}>
               <span style={{ color: "#23305d", fontWeight: "bold" }}>
-                Demo:
+                Demo Siswa:
               </span>{" "}
-              Pilih role, masukkan email & password apapun untuk login
+              NIS: <b>12345</b> | Password: <b>siswa123</b>
             </p>
           </div>
         </form>

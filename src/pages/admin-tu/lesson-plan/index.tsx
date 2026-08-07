@@ -1,7 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { AdminLayout } from "../../../layouts";
-import { FileSpreadsheet, ExternalLink, RefreshCw } from "lucide-react";
-import { Button, Spin, Select } from "antd";
+import {
+  FileSpreadsheet,
+  ExternalLink,
+  RefreshCw,
+  Plus,
+  Trash2,
+  Pencil,
+  X,
+  Save,
+} from "lucide-react";
+import { Button, Spin, Select, message } from "antd";
+import { lessonPlansApi } from "../../../utils/api";
 
 const COLORS = {
   primary: "#23305d",
@@ -13,177 +23,155 @@ const COLORS = {
   grayMedium: "#e9ecef",
 };
 
-// Daftar Google Spreadsheet Daily Lesson Plan SMP per Guru Bidang Studi
-const LESSON_PLANS = [
-  {
-    value: "sir-sem",
-    label: "SIR SEM (PKN)",
-    url: "https://docs.google.com/spreadsheets/d/1egmf77SxC2f0Og3Up7h4KDQtuXJoxqwt/edit?gid=1871866019#gid=1871866019",
-  },
-  {
-    value: "ms-sophie",
-    label: "MS SOPHIE",
-    url: "https://docs.google.com/spreadsheets/d/1nq9wU_U9LlSJ_hLfzZCJ5hXiIdKCLeiw/edit?gid=1708151715#gid=1708151715",
-  },
-  {
-    value: "ms-ririn",
-    label: "MS RIRIN",
-    url: "https://docs.google.com/spreadsheets/d/1sxfVT8pSz2qRUuYQNuzrO-wYsEBUUFv2/edit?gid=172235708#gid=172235708",
-  },
-  {
-    value: "ms-masyita",
-    label: "MS MASYITA",
-    url: "https://docs.google.com/spreadsheets/d/1nnBZJl2bvHdxBW3uJEy9-gywW3q2jn1N/edit?gid=2146208352#gid=2146208352",
-  },
-  {
-    value: "sir-maul-g1",
-    label: "SIR MAUL - GRADE 1",
-    url: "https://docs.google.com/spreadsheets/d/13QVDOyjwfv1hqC4qDdJciZDEUix3c5mM/edit?gid=464424798#gid=464424798",
-  },
-  {
-    value: "sir-maul-g2",
-    label: "SIR MAUL - GRADE 2",
-    url: "https://docs.google.com/spreadsheets/d/1vgeSBGMB1kTBTm0JsLdNDvudzL7_mqgt/edit?gid=1237535744#gid=1237535744",
-  },
-  {
-    value: "sir-maul-g3",
-    label: "SIR MAUL - GRADE 3",
-    url: "https://docs.google.com/spreadsheets/d/10sS2sDaZI4vocPh3mjLlrYYW7A8D56Mg/edit?gid=1891566894#gid=1891566894",
-  },
-  {
-    value: "sir-julian-g1",
-    label: "SIR JULIAN - GRADE 1",
-    url: "https://docs.google.com/spreadsheets/d/1DvQ-RK09ea4_2HcyCFxvMacS4ZUdg-Ia/edit?gid=618072638#gid=618072638",
-  },
-  {
-    value: "sir-julian-g2",
-    label: "SIR JULIAN - GRADE 2",
-    url: "https://docs.google.com/spreadsheets/d/1YHP6xl44jrWw7LCz33kJdhJEJtmacBNL/edit?gid=47815657#gid=47815657",
-  },
-  {
-    value: "sir-julian-g3",
-    label: "SIR JULIAN - GRADE 3",
-    url: "https://docs.google.com/spreadsheets/d/1sWKcHJ17XfI5omf8EuQTlfHFSacgTYio/edit?gid=1969637497#gid=1969637497",
-  },
-  {
-    value: "sir-julian-pra-g1",
-    label: "PRAKARYA SIR JULIAN - GRADE 1",
-    url: "https://docs.google.com/spreadsheets/d/1dJgNdEUX0Z493GFXzSoPC5aSgtAA5QUY/edit?gid=452719570#gid=452719570",
-  },
-  {
-    value: "sir-julian-pra-g2",
-    label: "PRAKARYA SIR JULIAN - GRADE 2",
-    url: "https://docs.google.com/spreadsheets/d/1Jn2c32Da_JIHy4XSQ4P-N5xoi5sjgq4A/edit?gid=183717813#gid=183717813",
-  },
-  {
-    value: "sir-julian-pra-g3",
-    label: "PRAKARYA SIR JULIAN - GRADE 3",
-    url: "https://docs.google.com/spreadsheets/d/1nwwHG-Xrljjykdd8dQ0JgNy0oOzK38oH/edit?gid=309448220#gid=309448220",
-  },
-  {
-    value: "sir-ikal-eng-g1",
-    label: "ENGLISH SIR IKAL - GRADE 1",
-    url: "https://docs.google.com/spreadsheets/d/1XyrVqNrSYf_51bkyI9c3IDt6pJaISoDu/edit?gid=471877080#gid=471877080",
-  },
-  {
-    value: "sir-ikal-eng-g2",
-    label: "ENGLISH SIR IKAL - GRADE 2",
-    url: "https://docs.google.com/spreadsheets/d/1A-tbmlcfQBmDJhDyh_aPmZp0H90ij24c/edit?gid=471877080#gid=471877080",
-  },
-  {
-    value: "sir-ikal-eng-g3",
-    label: "ENGLISH SIR IKAL - GRADE 3",
-    url: "https://docs.google.com/spreadsheets/d/1DF01TvLzUpb7jaaubUA6NopD2eK4unFB/edit?gid=471877080#gid=471877080",
-  },
-  {
-    value: "sir-ikal-coms-g",
-    label: "PRAKARYA SIR IKAL - GRADE ",
-    url: "https://docs.google.com/spreadsheets/d/1Hk3T6I-FvyNDXVPHRfhxnFYx77_8e9cy/edit?gid=471877080#gid=471877080",
-  },
-  {
-    value: "ms-mirfads-Biology-g1",
-    label: "Biology MS Mirfads - GRADE 2",
-    url: "https://docs.google.com/spreadsheets/d/1k4nDoKJ7FU8zToz5IhKZW8jQ9qvNb9R-/edit?gid=2080811428#gid=2080811428",
-  },
-  {
-    value: "ms-mirfads-Biology-g2",
-    label: "Biology MS Mirfads - GRADE 2",
-    url: "https://docs.google.com/spreadsheets/d/1skcE18QKBIvoCngJug8O4mptV3VKkju7/edit?gid=2080811428#gid=2080811428",
-  },
-  {
-    value: "ms-mirfads-Biology-g3",
-    label: "Biology MS Mirfads - GRADE 3",
-    url: "https://docs.google.com/spreadsheets/d/1HDsyRcbijtIFWd2G9OawpR9VRtwAoCer/edit?gid=2080811428#gid=2080811428",
-  },
-  {
-    value: "ms-bulan-math",
-    label: "MATH MS bulan - GRADE ",
-    url: "https://docs.google.com/spreadsheets/d/1NobvrSPLCQPWCUKAskO2vDqFnl-z4P6D/edit?gid=766317703#gid=766317703",
-  },
-];
+interface LessonPlan {
+  id: number | string;
+  teacher_name: string;
+  spreadsheet_link: string;
+}
+
+const extractList = (res: any): LessonPlan[] => {
+  const d = res?.data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  return [];
+};
 
 const LessonPlanPage: React.FC = () => {
-  const [selectedPlanValue, setSelectedPlanValue] = useState(
-    LESSON_PLANS[0].value,
-  );
+  const [plans, setPlans] = useState<LessonPlan[]>([]);
+  const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [iframeLoading, setIframeLoading] = useState(true);
   const [iframeKey, setIframeKey] = useState(0);
+  const [saving, setSaving] = useState(false);
 
-  // Memicu refresh otomatis & tampilkan loading spinner ketika opsi dropdown dipilih
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editing, setEditing] = useState<LessonPlan | null>(null);
+  const [form, setForm] = useState({ teacher_name: "", spreadsheet_link: "" });
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await lessonPlansApi.getAll();
+      const list = extractList(res);
+      setPlans(list);
+      if (list.length > 0) {
+        setSelectedId((prev) => {
+          if (prev && list.some((p) => String(p.id) === prev)) return prev;
+          return String(list[0].id);
+        });
+      } else {
+        setSelectedId("");
+      }
+    } catch {
+      message.error("Gagal memuat data lesson plan dari server");
+      setPlans([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    setLoading(true);
+    fetchPlans();
+  }, [fetchPlans]);
+
+  useEffect(() => {
+    setIframeLoading(true);
     setIframeKey((prev) => prev + 1);
-  }, [selectedPlanValue]);
+  }, [selectedId]);
 
-  // Ambil data plan yang aktif berdasarkan state
-  const activePlan =
-    LESSON_PLANS.find((plan) => plan.value === selectedPlanValue) ||
-    LESSON_PLANS[0];
-  const spreadsheetUrl = activePlan.url;
+  const activePlan = plans.find((p) => String(p.id) === selectedId) || plans[0];
+  const spreadsheetUrl = activePlan?.spreadsheet_link || "";
 
-  // Format URL agar menu ribbon Google Sheets tetap tampil
   const getEmbedUrl = (url: string) => {
     try {
       if (url.includes("docs.google.com/spreadsheets")) {
-        // Ganti path /preview menjadi /edit agar ribbon/toolbar editor lengkap tetap muncul
         if (url.includes("/preview")) {
           return url.replace(/\/preview(\?.*)?$/, "/edit");
         }
         return url;
       }
       return url;
-    } catch (e) {
+    } catch {
       return url;
     }
   };
 
   const handleRefresh = () => {
-    setLoading(true);
+    setIframeLoading(true);
     setIframeKey((prev) => prev + 1);
   };
 
-  const handleSelectChange = (value: string) => {
-    setSelectedPlanValue(value);
+  const openAdd = () => {
+    setEditing(null);
+    setForm({ teacher_name: "", spreadsheet_link: "" });
+    setIsModalOpen(true);
   };
+
+  const openEdit = () => {
+    if (!activePlan) return;
+    setEditing(activePlan);
+    setForm({
+      teacher_name: activePlan.teacher_name,
+      spreadsheet_link: activePlan.spreadsheet_link,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.teacher_name.trim() || !form.spreadsheet_link.trim()) {
+      message.warning("Nama guru dan link spreadsheet wajib diisi");
+      return;
+    }
+    try {
+      setSaving(true);
+      const payload = {
+        teacher_name: form.teacher_name.trim(),
+        spreadsheet_link: form.spreadsheet_link.trim(),
+      };
+      if (editing) {
+        await lessonPlansApi.update(editing.id, payload);
+        message.success("Lesson plan diperbarui");
+      } else {
+        await lessonPlansApi.create(payload);
+        message.success("Lesson plan ditambahkan");
+      }
+      setIsModalOpen(false);
+      await fetchPlans();
+    } catch {
+      message.error("Gagal menyimpan lesson plan");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!activePlan) return;
+    if (!window.confirm(`Hapus lesson plan "${activePlan.teacher_name}"?`)) return;
+    try {
+      await lessonPlansApi.delete(activePlan.id);
+      message.success("Lesson plan dihapus");
+      await fetchPlans();
+    } catch {
+      message.error("Gagal menghapus lesson plan");
+    }
+  };
+
+  const selectOptions = plans.map((p) => ({
+    value: String(p.id),
+    label: p.teacher_name,
+  }));
 
   return (
     <AdminLayout>
       <div className="space-y-6 pb-10">
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1
-              className="text-2xl font-bold text-left"
-              style={{ color: COLORS.primary }}
-            >
+            <h1 className="text-2xl font-bold text-left" style={{ color: COLORS.primary }}>
               Daily Lesson Plan
             </h1>
-            <p
-              className="text-sm text-left"
-              style={{ color: COLORS.secondary }}
-            >
-              Monitoring Rencana Pelaksanaan Pembelajaran Harian Guru dengan
-              Menu Lengkap.
+            <p className="text-sm text-left" style={{ color: COLORS.secondary }}>
+              Monitoring RPP harian guru dari database (tabel lesson_plans).
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -192,39 +180,64 @@ const LessonPlanPage: React.FC = () => {
                 Pilih Guru:
               </span>
               <Select
-                value={selectedPlanValue}
-                onChange={handleSelectChange}
-                options={LESSON_PLANS}
+                value={selectedId || undefined}
+                onChange={(v) => setSelectedId(v)}
+                options={selectOptions}
                 className="w-full"
                 style={{ height: 38 }}
+                placeholder={loading ? "Memuat..." : "Belum ada data"}
+                loading={loading}
+                disabled={plans.length === 0}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button icon={<Plus className="w-4 h-4" />} onClick={openAdd} style={{ height: 38 }}>
+                Tambah
+              </Button>
+              <Button
+                icon={<Pencil className="w-4 h-4" />}
+                onClick={openEdit}
+                disabled={!activePlan}
+                style={{ height: 38 }}
+              >
+                Edit
+              </Button>
+              <Button
+                danger
+                icon={<Trash2 className="w-4 h-4" />}
+                onClick={handleDelete}
+                disabled={!activePlan}
+                style={{ height: 38 }}
+              >
+                Hapus
+              </Button>
               <Button
                 icon={<RefreshCw className="w-4 h-4" />}
                 onClick={handleRefresh}
+                disabled={!spreadsheetUrl}
                 style={{ height: 38 }}
               >
                 Refresh
               </Button>
-              <Button
-                type="primary"
-                icon={<ExternalLink className="w-4 h-4" />}
-                href={spreadsheetUrl}
-                target="_blank"
-                style={{
-                  backgroundColor: COLORS.accent,
-                  borderColor: COLORS.accent,
-                  height: 38,
-                }}
-              >
-                Buka di Tab Baru
-              </Button>
+              {spreadsheetUrl && (
+                <Button
+                  type="primary"
+                  icon={<ExternalLink className="w-4 h-4" />}
+                  href={spreadsheetUrl}
+                  target="_blank"
+                  style={{
+                    backgroundColor: COLORS.accent,
+                    borderColor: COLORS.accent,
+                    height: 38,
+                  }}
+                >
+                  Buka di Tab Baru
+                </Button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Info Box */}
         <div
           className="p-4 rounded-xl border flex items-start gap-3 bg-[#fdfaf2]"
           style={{ borderColor: "rgba(217, 171, 63, 0.3)" }}
@@ -232,16 +245,17 @@ const LessonPlanPage: React.FC = () => {
           <FileSpreadsheet className="w-5 h-5 text-[#d9ab3f] mt-0.5 flex-shrink-0" />
           <div className="space-y-1">
             <p className="text-sm font-semibold text-gray-800 text-left">
-              Lembar Kerja Terintegrasi - {activePlan.label}
+              {activePlan
+                ? `Lembar Kerja Terintegrasi — ${activePlan.teacher_name}`
+                : "Belum ada lesson plan"}
             </p>
             <p className="text-xs text-gray-500 text-left">
-              Gunakan bilah menu Google Sheets di bawah ini untuk berpindah
-              lembar (sheets), mencari data, atau melakukan navigasi penuh.
+              Data diambil dari API <code>/api/lesson-plans</code>. Tambah link Google Spreadsheet
+              RPP per guru agar dapat dipantau di sini.
             </p>
           </div>
         </div>
 
-        {/* Iframe Viewport - Dioptimalkan tingginya untuk desktop */}
         <div
           className="relative w-full rounded-2xl border bg-white overflow-hidden shadow-sm flex flex-col"
           style={{
@@ -254,22 +268,108 @@ const LessonPlanPage: React.FC = () => {
             <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
               <div className="text-center space-y-3">
                 <Spin size="large" />
-                <p className="text-sm text-gray-500 font-medium">
-                  Memuat Google Spreadsheet...
-                </p>
+                <p className="text-sm text-gray-500 font-medium">Memuat data lesson plan...</p>
               </div>
             </div>
           )}
-          <iframe
-            key={iframeKey}
-            src={getEmbedUrl(spreadsheetUrl)}
-            className="w-full h-full border-none"
-            onLoad={() => setLoading(false)}
-            title={activePlan.label}
-            allowFullScreen
-          />
+
+          {!loading && !activePlan && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+              <div className="text-center space-y-3 max-w-sm px-4">
+                <FileSpreadsheet className="w-12 h-12 mx-auto text-gray-300" />
+                <p className="text-sm text-gray-600 font-medium">
+                  Belum ada lesson plan di database.
+                </p>
+                <Button type="primary" icon={<Plus className="w-4 h-4" />} onClick={openAdd}>
+                  Tambah Lesson Plan Pertama
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!loading && activePlan && spreadsheetUrl && (
+            <>
+              {iframeLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+                  <div className="text-center space-y-3">
+                    <Spin size="large" />
+                    <p className="text-sm text-gray-500 font-medium">
+                      Memuat Google Spreadsheet...
+                    </p>
+                  </div>
+                </div>
+              )}
+              <iframe
+                key={iframeKey}
+                src={getEmbedUrl(spreadsheetUrl)}
+                className="w-full h-full border-none"
+                onLoad={() => setIframeLoading(false)}
+                title={activePlan.teacher_name}
+                allowFullScreen
+              />
+            </>
+          )}
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold" style={{ color: COLORS.primary }}>
+                {editing ? "Edit Lesson Plan" : "Tambah Lesson Plan"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">
+                  Nama Guru
+                </label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d9ab3f]/40"
+                  style={{ borderColor: COLORS.grayMedium }}
+                  value={form.teacher_name}
+                  onChange={(e) => setForm({ ...form, teacher_name: e.target.value })}
+                  placeholder="Contoh: Budi Santoso, S.Pd"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">
+                  Link Google Spreadsheet
+                </label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d9ab3f]/40"
+                  style={{ borderColor: COLORS.grayMedium }}
+                  value={form.spreadsheet_link}
+                  onChange={(e) => setForm({ ...form, spreadsheet_link: e.target.value })}
+                  placeholder="https://docs.google.com/spreadsheets/d/..."
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button onClick={() => setIsModalOpen(false)}>Batal</Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={saving}
+                  icon={<Save className="w-4 h-4" />}
+                  style={{ backgroundColor: COLORS.accent, borderColor: COLORS.accent }}
+                >
+                  Simpan
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

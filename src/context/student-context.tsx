@@ -7,6 +7,8 @@ import React, {
   useEffect,
 } from "react";
 import * as XLSX from "xlsx";
+import { studentsApi } from "../utils/api";
+import { useAuth } from "./index";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -32,7 +34,7 @@ export interface Student {
 export type ImportStatus = "idle" | "loading" | "success" | "error";
 
 interface SpreadsheetSource {
-  type: "file" | "gsheets" | "manual";
+  type: "file" | "gsheets" | "manual" | "database";
   label: string;
   importedAt: string;
   count: number;
@@ -51,13 +53,13 @@ interface StudentContextType {
   importFromGSheets: (url?: string) => Promise<void>;
   saveStudentToSheets: (student: Student) => Promise<void>;
   clearStudents: () => void;
-  addOrUpdateStudent: (student: Student) => void;
-  removeStudent: (id: string) => void;
+  addOrUpdateStudent: (student: Student) => Promise<void>;
+  removeStudent: (id: string) => Promise<void>;
   resetStatus: () => void;
   downloadTemplate: () => Promise<void>;
 }
 
-// ─── Column mapping ──────────────────────────────────────────────────────────
+// ─── Column mapping for Excel imports ──────────────────────────────────────────
 
 const COL: Record<string, keyof Student> = {
   nis: "nis",
@@ -97,6 +99,47 @@ const COL: Record<string, keyof Student> = {
   "hp wali": "noTelpWali",
 };
 
+export function toFEStudent(s: any): Student {
+  return {
+    id: String(s.id),
+    nis: s.nis || "-",
+    nisn: s.nisn || "",
+    namaLengkap: s.nama_lengkap || "-",
+    kelas: s.kelas || "-",
+    jurusan: s.jurusan || "-",
+    jenisKelamin: s.jenis_kelamin || "",
+    status: s.status ? (s.status.charAt(0).toUpperCase() + s.status.slice(1)) : "Aktif",
+    tanggalLahir: s.tanggal_lahir || "",
+    tempatLahir: s.tempat_lahir || "",
+    alamat: s.alamat || "",
+    noTelp: s.no_telp || "",
+    email: s.email || "",
+    namaWali: s.nama_wali || "",
+    pekerjaanWali: s.pekerjaan_wali || "",
+    noTelpWali: s.no_telp_wali || "",
+  };
+}
+
+export function toBEStudent(s: Student): any {
+  return {
+    nis: s.nis,
+    nisn: s.nisn || null,
+    nama_lengkap: s.namaLengkap,
+    kelas: s.kelas,
+    jurusan: s.jurusan || null,
+    jenis_kelamin: s.jenisKelamin || null,
+    status: s.status ? s.status.toLowerCase() : "aktif",
+    tanggal_lahir: s.tanggalLahir || null,
+    tempat_lahir: s.tempatLahir || null,
+    alamat: s.alamat || null,
+    no_telp: s.noTelp || null,
+    email: s.email || null,
+    nama_wali: s.namaWali || null,
+    pekerjaan_wali: s.pekerjaanWali || null,
+    no_telp_wali: s.noTelpWali || null,
+  };
+}
+
 function parseRows(rows: Record<string, string>[]): Student[] {
   return rows
     .map((row, idx) => {
@@ -109,10 +152,7 @@ function parseRows(rows: Record<string, string>[]): Student[] {
         }
       }
       if (!s.namaLengkap && !s.nis) return null;
-      const uniqueId =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `sheet-${idx}-${Date.now()}-${Math.random()}`;
+      const uniqueId = `sheet-${idx}-${Date.now()}`;
       return {
         id: uniqueId,
         nis: s.nis || "-",
@@ -135,26 +175,6 @@ function parseRows(rows: Record<string, string>[]): Student[] {
     .filter(Boolean) as Student[];
 }
 
-const LS_KEY_STUDENTS = "ggs_students";
-const LS_KEY_SOURCE = "ggs_students_source";
-
-function loadFromStorage(): {
-  students: Student[];
-  source: SpreadsheetSource | null;
-} {
-  try {
-    const raw = localStorage.getItem(LS_KEY_STUDENTS);
-    const src = localStorage.getItem(LS_KEY_SOURCE);
-    return {
-      students: raw ? JSON.parse(raw) : [],
-      source: src ? JSON.parse(src) : null,
-    };
-  } catch {
-    return { students: [], source: null };
-  }
-}
-
-// ─── Context ─────────────────────────────────────────────────────────────────
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
 export const StudentProvider = ({
@@ -162,54 +182,47 @@ export const StudentProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const saved = loadFromStorage();
-
-  // ⚠️ Ganti dengan URL CSV publik dari Google Sheets (harus di‑publish)
-  const DEFAULT_GSHEETS_URL =
-    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQEJXU6ZIueGPFp0W7o7ypZVtZ7Seiya1cESF2NoOSI0SOoIJ-Riul8-sLc_KyH5xtEUjTqIaqukXfi/pub?gid=31445495&single=true&output=csv";
-
-  // ⚠️ Ganti dengan URL Apps Script yang sudah dideploy
-  const GAS_URL =
-    "https://script.google.com/macros/s/AKfycbyz-zixlx2IfXLCYg2upGLlehp32JRYZJqlFb-McYZVT0BV7SxgSGsUPTB3FCHh00nv/exec";
-
-  const [students, setStudents] = useState<Student[]>(saved.students);
-  const [source, setSource] = useState<SpreadsheetSource | null>(saved.source);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [source, setSource] = useState<SpreadsheetSource | null>(null);
   const [importStatus, setImportStatus] = useState<ImportStatus>("idle");
   const [importMessage, setImportMessage] = useState("");
-  const [lastSyncAt, setLastSyncAt] = useState<string | null>(
-    saved.source?.importedAt ?? null,
-  );
-  const [gsheetsUrl, setGsheetsUrl] = useState(
-    localStorage.getItem("local_gsheets_url") ||
-      (saved.source?.type === "gsheets"
-        ? saved.source.label
-        : DEFAULT_GSHEETS_URL),
-  );
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [gsheetsUrl, setGsheetsUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { user, authReady } = useAuth();
 
-  const persist = (data: Student[], src: SpreadsheetSource | null) => {
-    localStorage.setItem(LS_KEY_STUDENTS, JSON.stringify(data));
-    localStorage.setItem(LS_KEY_SOURCE, JSON.stringify(src));
-  };
+  const fetchStudents = useCallback(async () => {
+    setImportStatus("loading");
+    try {
+      if (!authReady || !user) return;
+      const response = user.role === "murid" ? await studentsApi.getMe() : await studentsApi.getAll();
+      const payload = response.data?.data || response.data;
+      const list = Array.isArray(payload) ? payload : payload ? [payload] : [];
+      const mapped = list.map(toFEStudent);
+      setStudents(mapped);
+      setSource({
+        type: "database",
+        label: "Database Sekolah",
+        importedAt: new Date().toISOString(),
+        count: mapped.length,
+      });
+      setLastSyncAt(new Date().toISOString());
+      setImportStatus("success");
+    } catch (err: any) {
+      console.error(err);
+      setImportStatus("error");
+      setImportMessage("Gagal memuat data dari database.");
+    }
+  }, [authReady, user]);
 
-  const applyImport = (parsed: Student[], src: SpreadsheetSource) => {
-    const now = new Date().toISOString();
-    const srcWithTime = { ...src, importedAt: now };
-    setStudents(parsed);
-    setSource(srcWithTime);
-    setLastSyncAt(now);
-    persist(parsed, srcWithTime);
-    setImportStatus("success");
-    setImportMessage(
-      `✓ ${parsed.length} data siswa berhasil disinkronkan dari ${src.type === "gsheets" ? "Google Sheets" : src.label}`,
-    );
-  };
+  useEffect(() => {
+    if (authReady && user) fetchStudents();
+  }, [fetchStudents]);
 
   // ── Import from local file ────────────────────────────────────────────────
   const importFromFile = useCallback(async (file: File) => {
     setImportStatus("loading");
     setImportMessage("");
-
     const ext = file.name.split(".").pop()?.toLowerCase();
 
     try {
@@ -252,158 +265,72 @@ export const StudentProvider = ({
         return;
       }
 
-      const src: SpreadsheetSource = {
-        type: "file",
-        label: file.name,
-        importedAt: new Date().toISOString(),
-        count: parsed.length,
-      };
-      applyImport(parsed, src);
-    } catch {
-      setImportStatus("error");
-      setImportMessage(
-        "Gagal membaca file. Pastikan format .xlsx atau .csv yang valid.",
-      );
-    }
-  }, []);
-
-  // ── Import / Refresh from Google Sheets ──────────────────────────────────
-  const importFromGSheets = useCallback(async () => {
-    setImportStatus("loading");
-    setImportMessage("");
-
-    try {
-      const res = await fetch(DEFAULT_GSHEETS_URL);
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+      // Save all parsed students to DB
+      for (const s of parsed) {
+        await studentsApi.create(toBEStudent(s));
       }
 
+      await fetchStudents();
+      setImportStatus("success");
+      setImportMessage(`✓ ${parsed.length} data siswa berhasil diimpor ke database.`);
+    } catch (err) {
+      console.error(err);
+      setImportStatus("error");
+      setImportMessage("Gagal membaca atau menyimpan file ke database.");
+    }
+  }, [fetchStudents]);
+
+  // ── Import / Refresh from Google Sheets ──────────────────────────────────
+  const importFromGSheets = useCallback(async (url?: string) => {
+    setImportStatus("loading");
+    setImportMessage("");
+    const targetUrl = url || gsheetsUrl;
+    if (!targetUrl) {
+      setImportStatus("error");
+      setImportMessage("URL Google Sheets kosong.");
+      return;
+    }
+
+    try {
+      const res = await fetch(targetUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
       const wb = XLSX.read(text, { type: "string" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-
       const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, {
         defval: "",
       });
-
       const parsed = parseRows(rows);
 
       if (parsed.length === 0) {
         setImportStatus("error");
-        setImportMessage(
-          "Tidak ada data ditemukan. Pastikan ada kolom NIS, Nama, dan Kelas.",
-        );
+        setImportMessage("Tidak ada data ditemukan.");
         return;
       }
 
-      const src: SpreadsheetSource = {
-        type: "gsheets",
-        label: DEFAULT_GSHEETS_URL,
-        importedAt: new Date().toISOString(),
-        count: parsed.length,
-      };
+      for (const s of parsed) {
+        await studentsApi.create(toBEStudent(s));
+      }
 
-      applyImport(parsed, src);
+      await fetchStudents();
+      setImportStatus("success");
+      setImportMessage(`✓ ${parsed.length} data siswa berhasil diimpor dari Google Sheets.`);
     } catch (err) {
       console.error(err);
       setImportStatus("error");
-      setImportMessage(
-        "Gagal mengambil data dari Google Sheets. Pastikan spreadsheet masih dipublish sebagai CSV.",
-      );
+      setImportMessage("Gagal mengambil atau mengimpor data Google Sheets.");
     }
-  }, []);
+  }, [gsheetsUrl, fetchStudents]);
 
-  // ── Simpan ke Google Sheets via Apps Script ──────────────────────────────
+  // ── Simpan ke Google Sheets via Apps Script (Dummy wrapper now) ──────────────────────────────
   const saveStudentToSheets = useCallback(
     async (student: Student) => {
-      try {
-        const response = await fetch(GAS_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain",
-          },
-          body: JSON.stringify(student),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const text = await response.text();
-        const result = JSON.parse(text);
-        if (!result.success) {
-          throw new Error(result.error || "Gagal menyimpan ke Sheets");
-        }
-
-        // Tunggu sebentar agar sheet sempat update, lalu refresh data
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await importFromGSheets();
-      } catch (err) {
-        console.error("saveStudentToSheets error:", err);
-        throw err;
-      }
+      // Directly resolving since it's already saved in DB
+      return Promise.resolve();
     },
-    [importFromGSheets],
+    [],
   );
 
-  // ── Auto-sync on mount ────────────────────────────────────────────────────
-  const hasSyncedOnMount = useRef(false);
-
-  useEffect(() => {
-    if (hasSyncedOnMount.current) return;
-    hasSyncedOnMount.current = true;
-
-    setImportStatus("loading");
-
-    fetch(DEFAULT_GSHEETS_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.text();
-      })
-      .then((text) => {
-        const wb = XLSX.read(text, { type: "string" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, {
-          defval: "",
-        });
-
-        const parsed = parseRows(rows);
-
-        if (parsed.length === 0) {
-          setImportStatus("error");
-          setImportMessage("Spreadsheet kosong.");
-          return;
-        }
-
-        const now = new Date().toISOString();
-
-        const src: SpreadsheetSource = {
-          type: "gsheets",
-          label: DEFAULT_GSHEETS_URL,
-          importedAt: now,
-          count: parsed.length,
-        };
-
-        setStudents(parsed);
-        setSource(src);
-        setLastSyncAt(now);
-        persist(parsed, src);
-
-        setImportStatus("success");
-        setImportMessage(
-          `✓ ${parsed.length} data siswa berhasil dimuat dari Google Sheets.`,
-        );
-      })
-      .catch((err) => {
-        console.error(err);
-        setImportStatus("error");
-        setImportMessage("Tidak dapat mengambil data dari Google Sheets.");
-      });
-  }, []);
-
-  // ── Download template ─────────────────────────────────────────────────────
   const downloadTemplate = useCallback(async () => {
     const { utils, writeFile } = await import("xlsx");
     const templateData = [
@@ -411,8 +338,7 @@ export const StudentProvider = ({
         NIS: "2024001",
         NISN: "1234567890",
         "Nama Lengkap": "Contoh Nama Siswa",
-        Kelas: "X-1",
-        Jurusan: "MIPA",
+        Kelas: "1-A",
         "Jenis Kelamin": "L",
         Status: "Aktif",
         "Tanggal Lahir": "2008-01-15",
@@ -424,23 +350,6 @@ export const StudentProvider = ({
         "Pekerjaan Wali": "Wiraswasta",
         "No Telp Wali": "08987654321",
       },
-      {
-        NIS: "2024002",
-        NISN: "0987654321",
-        "Nama Lengkap": "Contoh Siswa Kedua",
-        Kelas: "X-2",
-        Jurusan: "IPS",
-        "Jenis Kelamin": "P",
-        Status: "Aktif",
-        "Tanggal Lahir": "2008-03-20",
-        "Tempat Lahir": "Gowa",
-        Alamat: "Jl. Contoh No. 2",
-        "No Telp": "08234567890",
-        Email: "siswa2@email.com",
-        "Nama Wali": "Nama Wali Kedua",
-        "Pekerjaan Wali": "PNS",
-        "No Telp Wali": "08876543210",
-      },
     ];
     const ws = utils.json_to_sheet(templateData);
     ws["!cols"] = Object.keys(templateData[0]).map(() => ({ wch: 20 }));
@@ -449,63 +358,36 @@ export const StudentProvider = ({
     writeFile(wb, "Template_DataSiswa_GoldenGate.xlsx");
   }, []);
 
-  // ── CRUD helpers ─────────────────────────────────────────────────────────
-  const clearStudents = useCallback(() => {
+  const clearStudents = useCallback(async () => {
+    // We do not clear database, but reset local state to empty
     setStudents([]);
     setSource(null);
     setLastSyncAt(null);
     setImportStatus("idle");
     setImportMessage("");
-    setGsheetsUrl("");
-    localStorage.removeItem(LS_KEY_STUDENTS);
-    localStorage.removeItem(LS_KEY_SOURCE);
-    localStorage.removeItem("local_gsheets_url");
-    if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
   const addOrUpdateStudent = useCallback(
-    (student: Student) => {
-      setStudents((prev) => {
-        const exists = prev.findIndex(
-          (s) =>
-            s.id === student.id || (s.nis === student.nis && s.nis !== "-"),
-        );
-        let next;
-        if (exists >= 0) {
-          next = prev.map((s, idx) =>
-            idx === exists ? { ...s, ...student } : s,
-          );
-        } else {
-          next = [...prev, student];
-        }
+    async (student: Student) => {
+      const payload = toBEStudent(student);
+      const isNew = !student.id || student.id.startsWith("sheet-") || isNaN(Number(student.id));
 
-        const newSource: SpreadsheetSource = source || {
-          type: "manual",
-          label: localStorage.getItem("local_gsheets_url") || "Local Database",
-          importedAt: new Date().toISOString(),
-          count: next.length,
-        };
-        newSource.count = next.length;
-
-        persist(next, newSource);
-        setSource(newSource);
-        return next;
-      });
+      if (isNew) {
+        await studentsApi.create(payload);
+      } else {
+        await studentsApi.update(student.id, payload);
+      }
+      await fetchStudents();
     },
-    [source],
+    [fetchStudents],
   );
 
   const removeStudent = useCallback(
-    (id: string) => {
-      setStudents((prev) => {
-        const next = prev.filter((s) => s.id !== id);
-        const newSource = source ? { ...source, count: next.length } : null;
-        persist(next, newSource);
-        setSource(newSource);
-        return next;
-      });
+    async (id: string) => {
+      await studentsApi.delete(id);
+      await fetchStudents();
     },
-    [source],
+    [fetchStudents],
   );
 
   const resetStatus = useCallback(() => {

@@ -54,13 +54,13 @@ const DocumentsData: React.FC<DocumentsDataProps> = ({
       <div className="grid md:grid-cols-2 gap-4 mt-4">
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Ijazah SMP *
+            Ijazah / Surat Keterangan Lulus SD *
           </label>
           <input
             type="file"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d9ab3f] focus:border-transparent"
             accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(e) => handleFileChange("ijazahSMP", e)}
+            onChange={(e) => handleFileChange("ijazahSD", e)}
           />
           <p className="text-xs text-gray-500">
             Format: PDF, JPG, PNG (maks. 2MB)

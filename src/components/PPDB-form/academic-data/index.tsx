@@ -14,13 +14,13 @@ const AcademicData: React.FC<AcademicDataProps> = ({ formData, onChange }) => {
             htmlFor="asalSekolah"
             className="block text-sm font-medium text-gray-700"
           >
-            Asal Sekolah (SMP) *
+            Asal Sekolah (SD/MI) *
           </label>
           <input
             type="text"
             id="asalSekolah"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d9ab3f] focus:border-transparent"
-            placeholder="Nama SMP asal"
+            placeholder="Nama SD/MI asal"
             value={formData.asalSekolah || ""}
             onChange={(e) => onChange("asalSekolah", e.target.value)}
           />
@@ -42,31 +42,13 @@ const AcademicData: React.FC<AcademicDataProps> = ({ formData, onChange }) => {
           />
         </div>
       </div>
-      <div className="grid md:grid-cols-2 gap-4 mt-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="jurusan"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Pilihan Jurusan *
-          </label>
-          <select
-            id="jurusan"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d9ab3f] focus:border-transparent"
-            value={formData.jurusan || ""}
-            onChange={(e) => onChange("jurusan", e.target.value)}
-          >
-            <option value="">Pilih jurusan</option>
-            <option value="ipa">IPA (Matematika & IPA)</option>
-            <option value="ips">IPS (Ilmu Sosial)</option>
-          </select>
-        </div>
+      <div className="mt-4">
         <div className="space-y-2">
           <label
             htmlFor="nilaiUN"
             className="block text-sm font-medium text-gray-700"
           >
-            Nilai Rata-rata Ijazah SMP *
+            Nilai Rata-rata Raport / Ijazah SD *
           </label>
           <input
             type="number"

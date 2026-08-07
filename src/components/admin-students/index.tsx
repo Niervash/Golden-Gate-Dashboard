@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -27,6 +27,7 @@ import { format, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { useStudents, type Student } from "../../context/student-context";
 import { useNavigate } from "react-router-dom";
+import { classesApi } from "../../utils/api";
 
 const COLORS = {
   primary: "#23305d",
@@ -77,12 +78,37 @@ export const StudentManagementDashboard = () => {
     [students],
   );
 
+  // State untuk Master Kelas dari API
+  const [masterKelasOptions, setMasterKelasOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    classesApi
+      .getAll()
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const names = list.map((c: any) => c.nama_kelas).filter(Boolean) as string[];
+        if (names.length > 0) setMasterKelasOptions(names);
+      })
+      .catch(() => {
+        // silently fallback to student-derived options
+      });
+  }, []);
+
   const kelasOptions = useMemo(() => {
-    const all = Array.from(new Set(students.map((s) => s.kelas)))
+    // Prefer master kelas list; merge with unique kelas from students as fallback
+    const fromStudents = Array.from(new Set(students.map((s) => s.kelas)))
       .filter(Boolean)
       .sort();
-    return all;
-  }, [students]);
+    if (masterKelasOptions.length > 0) {
+      // Merge: master first, then any student kelas not in master
+      const merged = [...masterKelasOptions];
+      fromStudents.forEach((k) => {
+        if (!merged.includes(k)) merged.push(k);
+      });
+      return merged;
+    }
+    return fromStudents;
+  }, [students, masterKelasOptions]);
 
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
@@ -192,20 +218,16 @@ export const StudentManagementDashboard = () => {
     setIsSubmitting(true);
 
     try {
-      // Update state lokal
-      addOrUpdateStudent(newStudent);
+      // Update database
+      await addOrUpdateStudent(newStudent);
 
-      // Kirim ke Google Sheets
-      await saveStudentToSheets(newStudent);
-
-      alert("✅ Data berhasil disimpan ke Google Sheets!");
+      alert("✅ Data berhasil disimpan!");
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Gagal menyimpan ke Sheets:", error);
+      console.error("Gagal menyimpan siswa:", error);
       alert(
-        "❌ Gagal menyimpan ke Google Sheets: " +
-          (error instanceof Error ? error.message : "Unknown error") +
-          "\nData tetap tersimpan di lokal.",
+        "❌ Gagal menyimpan siswa: " +
+          (error instanceof Error ? error.message : "Unknown error")
       );
     } finally {
       setIsSubmitting(false);
@@ -649,7 +671,11 @@ export const StudentManagementDashboard = () => {
                           <QrCode size={16} />
                         </button>
                         <button
-                          onClick={() => removeStudent(student.id)}
+                          onClick={async () => {
+                            if (window.confirm("Apakah Anda yakin ingin menghapus siswa ini?")) {
+                              await removeStudent(student.id);
+                            }
+                          }}
                           className="p-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                           title="Hapus"
                         >
@@ -820,14 +846,29 @@ export const StudentManagementDashboard = () => {
                         <label className="block text-xs font-semibold text-gray-700">
                           Kelas *
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="kelas"
-                          placeholder="Contoh: X-1"
-                          defaultValue={selectedStudent?.kelas || ""}
+                          defaultValue={selectedStudent?.kelas || (kelasOptions[0] || "7-A")}
                           required
-                          className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none"
-                        />
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none bg-white"
+                        >
+                          {kelasOptions.length > 0 ? (
+                            kelasOptions.map((k) => (
+                              <option key={k} value={k}>
+                                {k}
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="7-A">7-A</option>
+                              <option value="7-B">7-B</option>
+                              <option value="8-A">8-A</option>
+                              <option value="8-B">8-B</option>
+                              <option value="9-A">9-A</option>
+                              <option value="X-IPA-1">X-IPA-1</option>
+                            </>
+                          )}
+                        </select>
                       </div>
                       <div className="space-y-1">
                         <label className="block text-xs font-semibold text-gray-700">
@@ -836,7 +877,7 @@ export const StudentManagementDashboard = () => {
                         <input
                           type="text"
                           name="jurusan"
-                          placeholder="Contoh: MIPA / IPS"
+                          placeholder="Tidak ada jurusan untuk SMP"
                           defaultValue={selectedStudent?.jurusan || ""}
                           className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#d9ab3f]/40 focus:outline-none"
                         />

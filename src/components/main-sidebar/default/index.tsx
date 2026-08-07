@@ -52,17 +52,17 @@ interface SidebarSection {
 /*  Design tokens                                                      */
 /* ------------------------------------------------------------------ */
 const COLORS = {
-  sidebarBg: "#1a2347",
-  sidebarBgGlass: "rgba(26, 35, 71, 0.97)",
+  sidebarBg: "#ffffff",
+  sidebarBgGlass: "rgba(255, 255, 255, 0.98)",
   accent: "#d9ab3f",
-  accentHover: "rgba(217, 171, 63, 0.12)",
-  accentActive: "rgba(217, 171, 63, 0.18)",
-  textPrimary: "#ffffff",
-  textSecondary: "#af9151",
-  textMuted: "rgba(175, 145, 81, 0.6)",
-  border: "rgba(67, 66, 78, 0.6)",
-  overlayBg: "rgba(0, 0, 0, 0.55)",
-  cardBg: "rgba(35, 48, 93, 0.5)",
+  accentHover: "rgba(217, 171, 63, 0.1)",
+  accentActive: "rgba(35, 48, 93, 0.08)",
+  textPrimary: "#23305d",
+  textSecondary: "#64748b",
+  textMuted: "#94a3b8",
+  border: "#e2e8f0",
+  overlayBg: "rgba(15, 23, 42, 0.4)",
+  cardBg: "#f8fafc",
 };
 
 const SIDEBAR_EXPANDED = 264;
@@ -72,7 +72,7 @@ const SIDEBAR_COLLAPSED = 76;
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 const MainSidebar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, canAccess } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -149,15 +149,22 @@ const MainSidebar: React.FC = () => {
     { key: "students", label: "Data Siswa", icon: <GraduationCap size={20} />, href: "/dashboard/students" },
     { key: "teachers", label: "Data Guru", icon: <Users size={20} />, href: "/dashboard/teachers" },
     { key: "academic", label: "Akademik", icon: <BookOpen size={20} />, href: "/dashboard/academic" },
+    { key: "master-classes", label: "Master Kelas", icon: <GraduationCap size={20} />, href: "/dashboard/master-classes" },
+    { key: "master-subjects", label: "Master Mata Pelajaran", icon: <BookOpen size={20} />, href: "/dashboard/master-subjects" },
     { key: "schedule", label: "Jadwal", icon: <Calendar size={20} />, href: "/dashboard/schedule" },
     { key: "attendance", label: "Absensi", icon: <UserCheck size={20} />, href: "/dashboard/attendance" },
     { key: "grades", label: "Penilaian", icon: <Award size={20} />, href: "/dashboard/grades" },
     { key: "counseling", label: "BK & Konseling", icon: <HeartHandshake size={20} />, href: "/dashboard/counseling" },
     { key: "achievements", label: "Prestasi", icon: <Award size={20} />, href: "/dashboard/achievements" },
+    { key: "extracurricular", label: "Ekstrakurikuler", icon: <Users size={20} />, href: "/dashboard/extracurricular" },
+    { key: "calendar-events", label: "Agenda Kalender", icon: <Calendar size={20} />, href: "/dashboard/calendar-events" },
+    { key: "news-cms", label: "CMS Berita", icon: <Megaphone size={20} />, href: "/dashboard/news-cms" },
+    { key: "library", label: "Drive Library & Summary", icon: <BookOpen size={20} />, href: "/dashboard/library" },
     { key: "reports", label: "Laporan", icon: <TrendingUp size={20} />, href: "/dashboard/reports" },
     { key: "lesson-plan", label: "Daily Lesson Plan", icon: <FileSpreadsheet size={20} />, href: "/dashboard/lesson-plan" },
     { key: "sapras", label: "Data Sapras", icon: <Package size={20} />, href: "/dashboard/admin-sapras" },
     { key: "student-cards", label: "Kartu & QR Siswa", icon: <QrCode size={20} />, href: "/dashboard/student-cards" },
+    { key: "user-management", label: "Manajemen Pengguna", icon: <UserCircle size={20} />, href: "/dashboard/user-management" },
   ];
 
   const moreItems: SidebarItem[] = [
@@ -169,9 +176,9 @@ const MainSidebar: React.FC = () => {
 
   /* ---- role filter ---- */
   const allowedAdmin: Record<string, string[]> = {
-    admin: ["students", "teachers", "academic", "sapras", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan", "student-cards"],
-    kepsek: ["academic", "sapras", "schedule", "attendance", "achievements", "reports", "lesson-plan"],
-    guru: ["academic", "schedule", "attendance", "grades", "lesson-plan"],
+    admin: ["students", "teachers", "academic", "master-classes", "master-subjects", "sapras", "schedule", "attendance", "grades", "counseling", "achievements", "reports", "lesson-plan", "student-cards", "user-management", "extracurricular", "calendar-events", "news-cms", "library"],
+    kepsek: ["academic", "sapras", "schedule", "attendance", "achievements", "reports", "lesson-plan", "extracurricular", "calendar-events", "news-cms", "library"],
+    guru: ["academic", "schedule", "attendance", "grades", "lesson-plan", "calendar-events", "library"],
   };
   const allowedMore: Record<string, string[]> = {
     admin: ["announcements", "archives", "settings", "help"],
@@ -179,11 +186,26 @@ const MainSidebar: React.FC = () => {
     guru: ["announcements", "help"],
   };
 
+  const matrixFeatureByMenuKey: Record<string, string> = {
+    students: "Data Siswa",
+    teachers: "Data Guru",
+    academic: "Akademik & Kurikulum",
+    "master-classes": "Akademik & Kurikulum",
+    "master-subjects": "Akademik & Kurikulum",
+    schedule: "Jadwal Pelajaran",
+    attendance: "Absensi & Presensi",
+    grades: "Penilaian & Raport",
+    counseling: "BK & Konseling",
+    archives: "Arsip Dokumen Sekolah",
+  };
+  const isAllowedByMatrix = (key: string) =>
+    !matrixFeatureByMenuKey[key] || canAccess(matrixFeatureByMenuKey[key]);
+
   const filteredAdmin = adminItems.filter((i) =>
-    user?.role ? (allowedAdmin[user.role] || []).includes(i.key) : false,
+    user?.role ? (allowedAdmin[user.role] || []).includes(i.key) && isAllowedByMatrix(i.key) : false,
   );
   const filteredMore = moreItems.filter((i) =>
-    user?.role ? (allowedMore[user.role] || []).includes(i.key) : false,
+    user?.role ? (allowedMore[user.role] || []).includes(i.key) && isAllowedByMatrix(i.key) : false,
   );
 
   /* ================================================================ */
@@ -206,9 +228,9 @@ const MainSidebar: React.FC = () => {
         style={{
           padding: collapsed ? "10px 0" : "10px 14px",
           justifyContent: collapsed ? "center" : "flex-start",
-          color: active ? COLORS.accent : hovered ? COLORS.textPrimary : COLORS.textSecondary,
+          color: active ? "#23305d" : hovered ? COLORS.textPrimary : COLORS.textSecondary,
           background: active
-            ? COLORS.accentActive
+            ? "rgba(35, 48, 93, 0.08)"
             : hovered
               ? COLORS.accentHover
               : "transparent",
@@ -219,8 +241,8 @@ const MainSidebar: React.FC = () => {
         {active && (
           <motion.div
             layoutId="sidebar-active-indicator"
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full"
-            style={{ height: 24, background: COLORS.accent }}
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] rounded-r-full"
+            style={{ height: 24, background: "#d9ab3f" }}
             transition={{ type: "spring", stiffness: 350, damping: 30 }}
           />
         )}

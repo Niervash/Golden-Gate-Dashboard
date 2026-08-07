@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { teachersApi, classesApi, usersApi } from "../../../utils/api";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -9,6 +10,7 @@ import {
   Trash2,
   Eye,
   Mail,
+  KeyRound,
 } from "lucide-react";
 import {
   Table,
@@ -55,108 +57,81 @@ interface Guru {
   email: string;
   telepon: string;
   bebanMengajar: number;
+  isHomeroom: boolean;
+  homeroomClass?: string;
 }
 
 // Data dummy awal
-const initialGuruData: Guru[] = [
-  {
-    id: 1,
-    nip: "198501152010011001",
-    nama: "Dr. Ahmad Suryadi, M.Pd",
-    mapel: "Matematika",
-    jabatan: "Kepala Sekolah",
-    status: "Aktif",
-    email: "ahmad.suryadi@smanusantara.sch.id",
-    telepon: "081234567890",
-    bebanMengajar: 12,
-  },
-  {
-    id: 2,
-    nip: "198702202011012002",
-    nama: "Dra. Siti Nurhaliza, M.M",
-    mapel: "Bahasa Indonesia",
-    jabatan: "Wakil Kepala Sekolah",
-    status: "Aktif",
-    email: "siti.nurhaliza@smanusantara.sch.id",
-    telepon: "081234567891",
-    bebanMengajar: 18,
-  },
-  {
-    id: 3,
-    nip: "199003152012011003",
-    nama: "Budi Santoso, S.Pd",
-    mapel: "Fisika",
-    jabatan: "Wali Kelas XII IPA 1",
-    status: "Aktif",
-    email: "budi.santoso@smanusantara.sch.id",
-    telepon: "081234567892",
-    bebanMengajar: 24,
-  },
-  {
-    id: 4,
-    nip: "198805102013012004",
-    nama: "Dewi Anggraini, S.Pd",
-    mapel: "Kimia",
-    jabatan: "Guru",
-    status: "Aktif",
-    email: "dewi.anggraini@smanusantara.sch.id",
-    telepon: "081234567893",
-    bebanMengajar: 24,
-  },
-  {
-    id: 5,
-    nip: "199108252014011005",
-    nama: "Rizky Pratama, S.Pd",
-    mapel: "Biologi",
-    jabatan: "Wali Kelas XI IPA 2",
-    status: "Aktif",
-    email: "rizky.pratama@smanusantara.sch.id",
-    telepon: "081234567894",
-    bebanMengajar: 22,
-  },
-  {
-    id: 6,
-    nip: "198604152015012006",
-    nama: "Nur Aini, S.Pd",
-    mapel: "Bahasa Inggris",
-    jabatan: "Koordinator BK",
-    status: "Aktif",
-    email: "nur.aini@smanusantara.sch.id",
-    telepon: "081234567895",
-    bebanMengajar: 20,
-  },
-  {
-    id: 7,
-    nip: "199205102016011007",
-    nama: "Agus Setiawan, S.Kom",
-    mapel: "Informatika",
-    jabatan: "Guru",
-    status: "Cuti",
-    email: "agus.setiawan@smanusantara.sch.id",
-    telepon: "081234567896",
-    bebanMengajar: 0,
-  },
-  {
-    id: 8,
-    nip: "198909152017012008",
-    nama: "Rina Wulandari, S.Pd",
-    mapel: "Ekonomi",
-    jabatan: "Wali Kelas X IPS 1",
-    status: "Aktif",
-    email: "rina.wulandari@smanusantara.sch.id",
-    telepon: "081234567897",
-    bebanMengajar: 24,
-  },
-];
+const initialGuruData: Guru[] = [];
 
 const DashboardGuru: React.FC = () => {
-  const [guruData, setGuruData] = useState<Guru[]>(initialGuruData);
+  const [guruData, setGuruData] = useState<Guru[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMapel, setFilterMapel] = useState<string>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedGuru, setSelectedGuru] = useState<Guru | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"view" | "edit">("view");
+
+  // Modal penetapan Wali Kelas
+  const [isHomeroomModalOpen, setIsHomeroomModalOpen] = useState(false);
+  const [targetGuruForHomeroom, setTargetGuruForHomeroom] = useState<Guru | null>(null);
+  const [homeroomClassInput, setHomeroomClassInput] = useState("");
+  const [accountEmails, setAccountEmails] = useState<Set<string>>(new Set());
+  const [activationGuru, setActivationGuru] = useState<Guru | null>(null);
+  const [activationPassword, setActivationPassword] = useState("");
+
+  const [addForm] = Form.useForm();
+
+  const mapToFE = (g: any): Guru => ({
+    id: g.id,
+    nip: g.nip,
+    nama: g.nama_lengkap,
+    mapel: g.mapel,
+    jabatan: g.jabatan,
+    status: g.status,
+    email: g.email || "",
+    telepon: g.telepon || "",
+    bebanMengajar: g.beban_mengajar || 0,
+    isHomeroom: Boolean(g.is_homeroom),
+    homeroomClass: g.homeroom_class || "",
+  });
+
+  const mapToBE = (g: any) => ({
+    nip: g.nip,
+    nama_lengkap: g.nama,
+    mapel: g.mapel,
+    jabatan: g.jabatan,
+    status: g.status,
+    email: g.email || null,
+    telepon: g.telepon || null,
+    beban_mengajar: Number(g.bebanMengajar),
+    is_homeroom: g.isHomeroom ? 1 : 0,
+    homeroom_class: g.homeroomClass || null,
+  });
+
+  const loadTeachers = async () => {
+    setLoading(true);
+    try {
+      const [teachersRes, usersRes] = await Promise.all([teachersApi.getAll(), usersApi.getAll()]);
+      const teacherList = Array.isArray(teachersRes.data) ? teachersRes.data : teachersRes.data?.data || [];
+      const userList = usersRes.data?.users || usersRes.data?.data || [];
+      setGuruData(teacherList.map(mapToFE));
+      setAccountEmails(new Set(userList
+        .filter((user: any) => user.role === "guru")
+        .map((user: any) => String(user.email || "").toLowerCase())));
+    } catch (err) {
+      console.error(err);
+      message.error("Gagal mengambil data guru dari server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTeachers();
+  }, []);
 
   // Filter data
   const filteredGuru = guruData.filter((guru) => {
@@ -196,21 +171,110 @@ const DashboardGuru: React.FC = () => {
       content: "Apakah Anda yakin ingin menghapus data guru ini?",
       okText: "Ya",
       cancelText: "Tidak",
-      onOk() {
-        setGuruData((prev) => prev.filter((g) => g.id !== id));
-        message.success("Data guru berhasil dihapus");
-        setIsDetailModalOpen(false);
+      async onOk() {
+        try {
+          await teachersApi.delete(id);
+          message.success("Data guru berhasil dihapus");
+          setIsDetailModalOpen(false);
+          await loadTeachers();
+        } catch (err: any) {
+          console.error(err);
+          message.error(err.response?.data?.message || err.message || "Gagal menghapus data guru");
+        }
       },
     });
   };
 
   // Handler untuk update data
-  const handleUpdate = (values: any) => {
-    setGuruData((prev) =>
-      prev.map((g) => (g.id === selectedGuru?.id ? { ...g, ...values } : g)),
-    );
-    message.success("Data guru berhasil diperbarui");
-    setIsDetailModalOpen(false);
+  const handleUpdate = async (values: any) => {
+    if (!selectedGuru) return;
+    try {
+      const payload = mapToBE(values);
+      await teachersApi.update(selectedGuru.id, payload);
+      message.success("Data guru berhasil diperbarui");
+      setIsDetailModalOpen(false);
+      await loadTeachers();
+    } catch (err: any) {
+      console.error(err);
+      message.error(err.response?.data?.message || err.message || "Gagal memperbarui data guru");
+    }
+  };
+
+  // State pilihan kelas dari Master Kelas
+  const [classListOptions, setClassListOptions] = useState<string[]>([]);
+
+  const loadClassesForSelect = async () => {
+    try {
+      const res = await classesApi.getAll();
+      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      if (list.length > 0) {
+        setClassListOptions(list.map((c: any) => c.nama_kelas).filter(Boolean));
+      } else {
+        const studRes = await teachersApi.getAll(); // fallback
+        const teachers = Array.isArray(studRes.data) ? studRes.data : [];
+        const existing = Array.from(new Set(teachers.map((t: any) => t.homeroom_class).filter(Boolean))) as string[];
+        setClassListOptions(existing.length > 0 ? existing : ["7-A", "7-B", "8-A", "8-B", "9-A", "X-IPA-1", "XI-IPA-1"]);
+      }
+    } catch {
+      setClassListOptions(["7-A", "7-B", "8-A", "8-B", "9-A", "X-IPA-1", "XI-IPA-1"]);
+    }
+  };
+
+  useEffect(() => {
+    loadClassesForSelect();
+  }, []);
+
+  // Handler penetapan Wali Kelas oleh TU
+  const handleOpenHomeroomModal = (guru: Guru) => {
+    setTargetGuruForHomeroom(guru);
+    setHomeroomClassInput(guru.homeroomClass || "");
+    setIsHomeroomModalOpen(true);
+  };
+
+  const handleSaveHomeroomAssignment = async () => {
+    if (!targetGuruForHomeroom) return;
+    try {
+      const classValue = (homeroomClassInput || "").trim();
+      await teachersApi.assignHomeroom(targetGuruForHomeroom.id, {
+        is_homeroom: Boolean(classValue && classValue !== "none"),
+        homeroom_class: classValue && classValue !== "none" ? classValue : undefined,
+      });
+      message.success(
+        classValue && classValue !== "none"
+          ? `Berhasil menetapkan ${targetGuruForHomeroom.nama} sebagai Wali Kelas ${classValue}`
+          : `Status Wali Kelas ${targetGuruForHomeroom.nama} dicabut`
+      );
+      setIsHomeroomModalOpen(false);
+      await loadTeachers();
+    } catch (err: any) {
+      console.error(err);
+      message.error(err.response?.data?.message || err.message || "Gagal memperbarui status Wali Kelas");
+    }
+  };
+
+  const handleActivateAccount = async () => {
+    if (!activationGuru?.email || !/^\S+@\S+\.\S+$/.test(activationGuru.email)) {
+      message.error("Lengkapi email yang valid pada data guru sebelum mengaktifkan akun.");
+      return;
+    }
+    if (!activationPassword || activationPassword.length < 6) {
+      message.error("Password awal minimal 6 karakter");
+      return;
+    }
+    try {
+      await usersApi.create({
+        name: activationGuru.nama,
+        email: activationGuru.email,
+        password: activationPassword,
+        role: "guru",
+      });
+      message.success(`Akun Guru untuk ${activationGuru.nama} berhasil diaktifkan`);
+      setActivationGuru(null);
+      setActivationPassword("");
+      await loadTeachers();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || "Gagal mengaktifkan akun guru");
+    }
   };
 
   // Kolom tabel Ant Design
@@ -242,6 +306,26 @@ const DashboardGuru: React.FC = () => {
       dataIndex: "mapel",
       key: "mapel",
       render: (text) => <span style={{ color: COLORS.primary }}>{text}</span>,
+    },
+    {
+      title: "Wali Kelas",
+      key: "homeroom",
+      render: (_, record) =>
+        record.isHomeroom && record.homeroomClass ? (
+          <Badge
+            color={COLORS.primary}
+            text={`Wali Kelas ${record.homeroomClass}`}
+            style={{
+              backgroundColor: COLORS.blueTransparent10,
+              color: COLORS.primary,
+              padding: "4px 8px",
+              borderRadius: "12px",
+              fontWeight: 600,
+            }}
+          />
+        ) : (
+          <span style={{ color: COLORS.secondary, fontSize: 12 }}>-</span>
+        ),
     },
     {
       title: "Jabatan",
@@ -278,7 +362,28 @@ const DashboardGuru: React.FC = () => {
       key: "aksi",
       align: "right",
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
+          {record.email && accountEmails.has(String(record.email).toLowerCase()) ? (
+            <span className="text-xs font-semibold text-emerald-600">Akun Aktif</span>
+          ) : (
+            <Button
+              type="primary"
+              size="small"
+              icon={<KeyRound size={14} />}
+              onClick={() => { setActivationGuru(record); setActivationPassword(""); }}
+              style={{ backgroundColor: COLORS.primary, borderColor: COLORS.primary, fontSize: 12 }}
+            >
+              Aktifkan Akun
+            </Button>
+          )}
+          <Button
+            type="outline"
+            size="small"
+            onClick={() => handleOpenHomeroomModal(record)}
+            style={{ borderColor: COLORS.accent, color: COLORS.primary, fontSize: 12 }}
+          >
+            Set Wali Kelas
+          </Button>
           <Button
             type="text"
             icon={<Eye size={16} />}
@@ -693,7 +798,7 @@ const DashboardGuru: React.FC = () => {
             <Button
               key="submit"
               type="primary"
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => addForm.submit()}
               className="w-full sm:w-auto"
               style={{
                 backgroundColor: COLORS.accent,
@@ -706,77 +811,130 @@ const DashboardGuru: React.FC = () => {
           width={600}
           className="mx-4 sm:mx-auto"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-            <div>
-              <Text strong style={{ color: COLORS.secondary }}>
-                NIP
-              </Text>
-              <Input
-                placeholder="Masukkan NIP"
-                style={{ borderColor: COLORS.secondary }}
-              />
+          <Form
+            form={addForm}
+            layout="vertical"
+            onFinish={async (values) => {
+              try {
+                const payload = mapToBE(values);
+                await teachersApi.create(payload);
+                message.success("Guru baru berhasil ditambahkan");
+                setIsAddModalOpen(false);
+                addForm.resetFields();
+                await loadTeachers();
+              } catch (err: any) {
+                console.error(err);
+                message.error(err.response?.data?.message || err.message || "Gagal menambahkan guru");
+              }
+            }}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+              <Form.Item label="NIP" name="nip" rules={[{ required: true, message: "NIP wajib diisi" }]}>
+                <Input placeholder="Masukkan NIP" style={{ borderColor: COLORS.secondary }} />
+              </Form.Item>
+              <Form.Item label="Nama Lengkap" name="nama" rules={[{ required: true, message: "Nama wajib diisi" }]}>
+                <Input placeholder="Masukkan nama lengkap" style={{ borderColor: COLORS.secondary }} />
+              </Form.Item>
+              <Form.Item label="Email" name="email" rules={[{ required: true, type: "email", message: "Email tidak valid" }]}>
+                <Input type="email" placeholder="Masukkan email" style={{ borderColor: COLORS.secondary }} />
+              </Form.Item>
+              <Form.Item label="No. Telepon" name="telepon" rules={[{ required: true, message: "Telepon wajib diisi" }]}>
+                <Input placeholder="Masukkan no. telepon" style={{ borderColor: COLORS.secondary }} />
+              </Form.Item>
+              <Form.Item label="Mata Pelajaran" name="mapel" rules={[{ required: true, message: "Pilih mata pelajaran" }]}>
+                <Select placeholder="Pilih mata pelajaran" style={{ width: "100%" }}>
+                  <Option value="Matematika">Matematika</Option>
+                  <Option value="Fisika">Fisika</Option>
+                  <Option value="Bahasa Indonesia">Bahasa Indonesia</Option>
+                  <Option value="Informatika">Informatika</Option>
+                  <Option value="Kimia">Kimia</Option>
+                  <Option value="Biologi">Biologi</Option>
+                  <Option value="Bahasa Inggris">Bahasa Inggris</Option>
+                </Select>
+              </Form.Item>
+              <Form.Item label="Jabatan" name="jabatan" rules={[{ required: true, message: "Pilih jabatan" }]}>
+                <Select placeholder="Pilih jabatan" style={{ width: "100%" }}>
+                  <Option value="Guru">Guru</Option>
+                  <Option value="Wali Kelas">Wali Kelas</Option>
+                  <Option value="Wakil Kepala Sekolah">Wakil Kepala Sekolah</Option>
+                  <Option value="Kepala Sekolah">Kepala Sekolah</Option>
+                </Select>
+              </Form.Item>
+              <Form.Item label="Status" name="status" initialValue="Aktif" rules={[{ required: true }]}>
+                <Select style={{ width: "100%" }}>
+                  <Option value="Aktif">Aktif</Option>
+                  <Option value="Cuti">Cuti</Option>
+                </Select>
+              </Form.Item>
+              <Form.Item label="Beban Mengajar" name="bebanMengajar" initialValue={18} rules={[{ required: true }]}>
+                <Input type="number" placeholder="Beban mengajar (JP)" style={{ borderColor: COLORS.secondary }} />
+              </Form.Item>
             </div>
-            <div>
-              <Text strong style={{ color: COLORS.secondary }}>
-                Nama Lengkap
-              </Text>
-              <Input
-                placeholder="Masukkan nama lengkap"
-                style={{ borderColor: COLORS.secondary }}
-              />
-            </div>
-            <div>
-              <Text strong style={{ color: COLORS.secondary }}>
-                Email
-              </Text>
-              <Input
-                type="email"
-                placeholder="Masukkan email"
-                style={{ borderColor: COLORS.secondary }}
-              />
-            </div>
-            <div>
-              <Text strong style={{ color: COLORS.secondary }}>
-                No. Telepon
-              </Text>
-              <Input
-                placeholder="Masukkan no. telepon"
-                style={{ borderColor: COLORS.secondary }}
-              />
-            </div>
-            <div>
-              <Text strong style={{ color: COLORS.secondary }}>
-                Mata Pelajaran
-              </Text>
-              <Select
-                placeholder="Pilih mata pelajaran"
-                style={{ width: "100%" }}
-              >
-                {mapelList.map((mapel) => (
-                  <Option key={mapel} value={mapel}>
-                    {mapel}
-                  </Option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Text strong style={{ color: COLORS.secondary }}>
-                Jabatan
-              </Text>
-              <Select placeholder="Pilih jabatan" style={{ width: "100%" }}>
-                <Option value="Guru">Guru</Option>
-                <Option value="Wali Kelas">Wali Kelas</Option>
-                <Option value="Wakil Kepala Sekolah">
-                  Wakil Kepala Sekolah
-                </Option>
-                <Option value="Kepala Sekolah">Kepala Sekolah</Option>
-              </Select>
-            </div>
-          </div>
+          </Form>
         </Modal>
 
         {/* Modal Detail/Edit */}
         {renderDetailModal()}
+
+        {/* Aktivasi Akun Login dari Data Guru */}
+        <Modal
+          title={`Aktifkan Akun Guru — ${activationGuru?.nama || ""}`}
+          open={Boolean(activationGuru)}
+          onOk={handleActivateAccount}
+          onCancel={() => { setActivationGuru(null); setActivationPassword(""); }}
+          okText="Aktifkan Akun"
+          cancelText="Batal"
+        >
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-gray-600">
+              Akun dibuat dari data guru yang sudah terdaftar. Guru akan login menggunakan email <strong>{activationGuru?.email}</strong>.
+            </p>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase text-gray-500">Password awal</label>
+              <Input.Password
+                value={activationPassword}
+                onChange={(event) => setActivationPassword(event.target.value)}
+                placeholder="Minimal 6 karakter"
+              />
+            </div>
+          </div>
+        </Modal>
+
+        {/* Modal Penetapan Wali Kelas oleh TU */}
+        <Modal
+          title={`Penetapan Wali Kelas — ${targetGuruForHomeroom?.nama || ""}`}
+          open={isHomeroomModalOpen}
+          onOk={handleSaveHomeroomAssignment}
+          onCancel={() => setIsHomeroomModalOpen(false)}
+          okText="Simpan Penugasan"
+          cancelText="Batal"
+        >
+          <div className="py-2 space-y-4">
+            <p className="text-sm text-gray-600">
+              Pilih kelas untuk menetapkan guru ini sebagai <strong>Wali Kelas</strong>. Pilih <em>"Tidak ada (cabut wali kelas)"</em> untuk mencabut status Wali Kelas.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                Nama Kelas Binaan
+              </label>
+              <Select
+                placeholder="Pilih kelas..."
+                value={homeroomClassInput || "none"}
+                onChange={(val) => setHomeroomClassInput(val === "none" ? "" : val)}
+                style={{ width: "100%" }}
+                showSearch
+                optionFilterProp="children"
+              >
+                <Option value="none">— Tidak ada (cabut wali kelas) —</Option>
+                {classListOptions.map((kelas) => (
+                  <Option key={kelas} value={kelas}>
+                    {kelas}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </Modal>
       </div>
     </>
   );

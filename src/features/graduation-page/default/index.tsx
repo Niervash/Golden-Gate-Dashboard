@@ -2,30 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ILoveGGS, ILovemyMusic } from "../../../assets";
 import confetti from "canvas-confetti";
-import { ArrowBigLeft, X, Music, Pause, Lock } from "lucide-react";
+import { ArrowBigLeft, X, Music, Pause, Lock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { studentsApi } from "../../../utils/api";
 
-// Data siswa
-const dummyStudents = [
-  {
-    nisn: "0101609144",
-    name: "Ariqah Jinan Khayyirah",
-    status: "GRADUATED",
-    averageScore: 83,
-  },
-  {
-    nisn: "0105891076",
-    name: "Naylah Nafisa Ayu",
-    status: "GRADUATED",
-    averageScore: 82,
-  },
-  {
-    nisn: "0113844726",
-    name: "Damai Gratia Tri Tanga Putri",
-    status: "GRADUATED",
-    averageScore: 89,
-  },
-];
+
 
 const GraduationPage: React.FC = () => {
   const [nisn, setNisn] = useState("");
@@ -41,6 +22,7 @@ const GraduationPage: React.FC = () => {
     name: string;
     score: number;
   } | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   // Music entrance state
@@ -149,41 +131,42 @@ const GraduationPage: React.FC = () => {
     }
   };
 
-  const handleCheck = () => {
-    if (!countdownFinished) return;
-    const student = dummyStudents.find((s) => s.nisn === nisn.trim());
-    if (student) {
-      setResult({
-        found: true,
-        name: student.name,
-        status: student.status,
-        averageScore: student.averageScore,
-      });
-      if (student.status === "GRADUATED") {
-        confetti({
-          particleCount: 180,
-          spread: 100,
-          origin: { y: 0.6 },
-          startVelocity: 20,
-          colors: ["#C5A059", "#D4AF37", "#F8F6F0", "#23305d"],
+  const handleCheck = async () => {
+    if (!countdownFinished || !nisn.trim()) return;
+    setIsChecking(true);
+    setResult(null);
+    try {
+      const res = await studentsApi.getAll();
+      const students: any[] = res.data;
+      // Match by nisn field (check both 'nisn' and 'nis' for compatibility)
+      const student = students.find(
+        (s) =>
+          String(s.nisn || "").trim() === nisn.trim() ||
+          String(s.nis || "").trim() === nisn.trim()
+      );
+      if (student) {
+        const isGraduated =
+          (student.status || "").toLowerCase() === "alumni" ||
+          (student.status || "").toLowerCase() === "graduated";
+        setResult({
+          found: true,
+          name: student.nama_lengkap || student.nama,
+          status: isGraduated ? "GRADUATED" : "NOT GRADUATED",
+          averageScore: student.rata_rata || undefined,
         });
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.7, x: 0.2 },
-          startVelocity: 25,
-          colors: ["#C5A059", "#FFFFFF"],
-        });
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.7, x: 0.8 },
-          startVelocity: 25,
-          colors: ["#C5A059", "#FFFFFF"],
-        });
+        if (isGraduated) {
+          confetti({ particleCount: 180, spread: 100, origin: { y: 0.6 }, startVelocity: 20, colors: ["#C5A059", "#D4AF37", "#F8F6F0", "#23305d"] });
+          confetti({ particleCount: 80, spread: 70, origin: { y: 0.7, x: 0.2 }, startVelocity: 25, colors: ["#C5A059", "#FFFFFF"] });
+          confetti({ particleCount: 80, spread: 70, origin: { y: 0.7, x: 0.8 }, startVelocity: 25, colors: ["#C5A059", "#FFFFFF"] });
+        }
+      } else {
+        setResult({ found: false });
       }
-    } else {
+    } catch (err) {
+      console.error("Error checking graduation status:", err);
       setResult({ found: false });
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -438,10 +421,10 @@ const GraduationPage: React.FC = () => {
             />
             <button
               onClick={handleCheck}
-              disabled={!countdownFinished || !nisn}
-              className="px-5 py-2.5 rounded-full btn-gold text-sm font-semibold disabled:opacity-40 disabled:pointer-events-none shadow-sm sm:px-6 sm:py-3"
+              disabled={!countdownFinished || !nisn || isChecking}
+              className="px-5 py-2.5 rounded-full btn-gold text-sm font-semibold disabled:opacity-40 disabled:pointer-events-none shadow-sm sm:px-6 sm:py-3 flex items-center gap-2"
             >
-              VERIFY NISN
+              {isChecking ? <><Loader2 size={14} className="animate-spin" /> CHECKING...</> : "VERIFY NISN"}
             </button>
           </div>
 
